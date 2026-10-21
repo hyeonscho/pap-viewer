@@ -1,0 +1,52 @@
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+You receive frozen visual concept definitions and
+the actual outputs of a frozen detector for the CURRENT observation only.
+No labeled Train examples or past detector archive are supplied.
+Interpret IDs using their visual definitions and geometry, and use your existing
+knowledge of the allowed classes. Detections can be wrong or incomplete.
+No detection means unknown, not verified absence. There is no complete visibility
+map. Repeated detections are not independent confirmations. Nearby records may
+describe the same structure. Cite observation IDs, not concept IDs, as evidence_ids.
+Do not infer physical instance counts, connections, or closure from record counts
+or proximity alone. Do not add inferred features to the evidence record.
+No image is attached. Your current perceptual
+input is the detector output only. Do not assume access to the underlying pixels.
+
+Allowed classes:
+{"0": "T-shirt/top", "1": "Trouser", "2": "Pullover", "3": "Dress", "4": "Coat", "5": "Sandal", "6": "Shirt", "7": "Sneaker", "8": "Bag", "9": "Ankle boot"}
+Budget:
+{"observations_used": 6, "observations_remaining": 30, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: narrow bright horizontal lower rim at approximately (83,202), with darker pixels below; garment identity unclear.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: no detector instances; local appearance remains unknown.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: no detector instances; current local features unknown.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o003", "model_output": {"state_note": "o003: no detector instances; current local features remain unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o004", "model_output": {"state_note": "o004: no detector instances; no local shape evidence available.", "action": "right", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o005", "step": 5, "previous_action": "right"}
+Frozen definitions:
+[{"id": "batch0_vertical_boundary_bright_right", "definition": "A locally near-vertical transition with dark pixels on the left and brighter pixels on the right.", "anchor_rule": "Anchor at the midpoint of the supported transition.", "box_rule": "Enclose the observed segment and nearby contrasting pixels on both sides.", "support_rule": "Require sustained vertical contrast within visible content. Exclude mask edges and do not infer continuation."}, {"id": "batch0_vertical_boundary_bright_left", "definition": "A locally near-vertical transition with brighter pixels on the left and dark pixels on the right.", "anchor_rule": "Anchor at the midpoint of the supported transition.", "box_rule": "Enclose the observed transition and local contrast on both sides.", "support_rule": "Require a sustained near-vertical segment inside visible content. Exclude mask edges and inferred extensions."}, {"id": "batch0_upper_left_shoulder", "definition": "A curved transition rising toward the right from a near-vertical left margin, with darkness above-left and brighter material below-right.", "anchor_rule": "Anchor at the supported bend between the upright and rising portions.", "box_rule": "Enclose the visible bend and adjacent contrast without completing an outline.", "support_rule": "Require visible curvature and the specified sidedness within the window. Cropping does not establish endpoints."}, {"id": "batch0_upper_right_shoulder", "definition": "A curved transition descending toward the right into a near-vertical right margin, with brighter material below-left and darkness above-right.", "anchor_rule": "Anchor at the supported bend into the upright margin.", "box_rule": "Enclose the observed curve and immediate contrast on both sides.", "support_rule": "Require curvature with the specified orientation inside visible content. Exclude mask boundaries and hidden contour completion."}, {"id": "batch0_bright_horizontal_lower_rim", "definition": "A narrow, approximately horizontal bright ridge along a lighter region's lower boundary, with visibly darker pixels below.", "anchor_rule": "Anchor at the midpoint of the supported ridge.", "box_rule": "Enclose the ridge and visible context immediately above and below.", "support_rule": "Require a local brightness ridge and lower-side contrast inside the window. Do not infer endpoints or use the window bottom as evidence."}, {"id": "batch0_upright_dark_slit", "definition": "A narrow, vertically elongated dark mark with brighter pixels supporting both lateral sides.", "anchor_rule": "Anchor at the midpoint of the supported dark centerline.", "box_rule": "Enclose the visible dark segment and its bright lateral flanks.", "support_rule": "Require vertical elongation and two visible bright flanks. Do not infer closure, depth, or true endpoints."}]
+Current detector output:
+{"instances": [{"concept_id": "batch0_vertical_boundary_bright_right", "anchor": [175, 63], "box": [171, 55, 181, 72]}, {"concept_id": "batch0_vertical_boundary_bright_right", "anchor": [167, 83], "box": [162, 72, 172, 95]}]}

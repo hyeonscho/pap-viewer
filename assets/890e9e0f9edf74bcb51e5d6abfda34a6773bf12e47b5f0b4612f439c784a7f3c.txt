@@ -1,0 +1,47 @@
+Each attachment is a uint8 grayscale 224x224 masked observation.
+Only a 64x64 window is visible at its canvas location. Exterior pixels are 128.
+No window origin or separate visibility mask is supplied. Real visible pixels
+may also equal 128. Coordinates use x rightward, y downward, integer anchors
+in [0,223], and half-open boxes within [0,224]. Never treat mask boundaries as
+physical contours, or cropped fragments as complete shapes or true endpoints.
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+This is a Test-only classification
+request. Exactly ONE image is attached: the CURRENT masked observation.
+No Train examples, Train summary, concept catalog, or generated detector are supplied.
+Interpret current pixels directly and retain useful observations in state_note.
+Repeated or overlapping glimpses are not separate objects.
+
+Allowed classes:
+{"0": "T-shirt/top", "1": "Trouser", "2": "Pullover", "3": "Dress", "4": "Coat", "5": "Sandal", "6": "Shirt", "7": "Sneaker", "8": "Bag", "9": "Ankle boot"}
+Budget:
+{"observations_used": 19, "observations_remaining": 17, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: Visible patch around x72\u2013136, y96\u2013160 contains pale gray fabric-like texture with faint vertical bands; no clear garment contour yet.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: Patch x72\u2013136, y64\u2013128 shows pale fabric with vertical bands and a small dark mark near the right edge; garment outline remains unknown.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: Patch x72\u2013136, y32\u201396 shows pale mottled fabric, a dark area at the upper-left edge, and faint vertical dark marks; garment outline remains unclear.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o003", "model_output": {"state_note": "o003: Patch x72\u2013136, y0\u201364 shows pale fabric below a near-horizontal upper edge around y8, with a dark background strip along the upper-left side and a faint dark mark near x109,y58. Overall shape remains unclear.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o004", "model_output": {"state_note": "o004: Patch x104\u2013168,y0\u201364 shows pale fabric on the left and below a stepped boundary descending from about x140,y8 to x166,y49; black background above/right. Garment type remains uncertain.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o005", "model_output": {"state_note": "o005: Patch x136\u2013200,y0\u201364 shows pale material left/below a boundary descending from about x140,y9 to x176,y60, with black above/right. This may be a shoulder contour; lower shape remains unknown.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o006", "model_output": {"state_note": "o006: Patch x136\u2013200,y32\u201396 shows pale material left of a curved outer edge reaching about x185 near y80\u201396, with black background to the right. Lower garment shape is still unknown.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o007", "model_output": {"state_note": "o007: Patch x136\u2013200,y64\u2013128 shows pale vertically shaded material with an outer edge near x183\u2013186 and black background to its right. No sleeve endpoint or lower hem is visible.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o008", "model_output": {"state_note": "o008: Patch x136\u2013200,y96\u2013160 shows pale vertically shaded material ending near x185\u2013188, with black background to its right; no hem or sleeve endpoint visible.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o009", "model_output": {"state_note": "o009: Patch x136\u2013200,y128\u2013192 shows pale material with vertical shading and a nearly straight outer edge around x185\u2013189; black lies to its right. No clear hem is visible.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o010", "model_output": {"state_note": "o010: Patch x136\u2013200,y160\u2013224 shows pale material ending around y216\u2013222, with black below and a black notch entering from the left near y200. This may be a long sleeve cuff; torso hem remains unobserved.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o011", "model_output": {"state_note": "o011: Patch x104\u2013168,y160\u2013224 shows pale material above an approximately horizontal edge at y199 from x104 to x150, then a narrow pale extension toward x160,y216; black below. Could be torso hem beside a sleeve, but shape remains uncertain.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o012", "model_output": {"state_note": "o012: Patch x72\u2013136,y160\u2013224 shows pale textured material above a nearly horizontal hem around y199\u2013204, with black below. Together with prior right-side extension, a long-sleeved top remains plausible; neckline and fastening are unknown.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o013", "model_output": {"state_note": "o013: Patch x72\u2013136,y128\u2013192 shows pale fabric with faint horizontal mottling and vertical shading; no distinct buttons, opening, or contour is visible.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o014", "model_output": {"state_note": "o014: Patch x72\u2013136,y96\u2013160 shows pale mottled fabric with faint vertical shading; no distinct fastening or opening is visible. Neckline remains unobserved.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o015", "model_output": {"state_note": "o015: Patch x72\u2013136,y64\u2013128 shows pale fabric, faint vertical bands, and a small dark mark near x132,y84; no clear opening or collar visible.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o016", "model_output": {"state_note": "o016: Patch x72\u2013136,y32\u201396 shows pale mottled fabric, a dark fragment at the upper-left edge, and faint vertical marks near x109 and x132. Collar or neckline is not yet clear.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o017", "model_output": {"state_note": "o017: Patch x72\u2013136,y0\u201364 shows pale material below a top edge near y8, black at the upper-left, and a dark short mark near x109,y58. No clear collar or fastening; left upper contour remains unseen.", "action": "left", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o018", "step": 18, "previous_action": "left"}

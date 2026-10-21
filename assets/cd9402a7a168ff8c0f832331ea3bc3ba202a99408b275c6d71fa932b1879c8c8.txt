@@ -1,0 +1,271 @@
+import numpy as np
+from scipy.ndimage import convolve1d
+
+
+def _prepare(observation):
+    if not isinstance(observation, np.ndarray):
+        raise TypeError('observation must be a numpy array')
+    if observation.shape != (224, 224) or observation.dtype != np.uint8:
+        raise ValueError('expected a (224,224) uint8 array')
+    yy, xx = np.nonzero(observation != 128)
+    if not len(xx):
+        return None
+    # Each coordinate gives an interval of possible window origins.
+    lx, ux = max(0, int(xx.max()) - 63), min(160, int(xx.min()))
+    ly, uy = max(0, int(yy.max()) - 63), min(160, int(yy.min()))
+    if lx > ux or ly > uy:
+        raise ValueError('no consistent in-bounds 64x64 window')
+    # Intersection of all consistent windows, including genuine 128 pixels.
+    x0, y0, x1, y1 = ux, uy, lx + 64, ly + 64
+    a = observation[y0:y1, x0:x1].astype(np.float64)
+    kernel = np.array([0.25, 0.5, 0.25])
+    a = convolve1d(convolve1d(a, kernel, axis=0, mode='nearest'),
+                   kernel, axis=1, mode='nearest')
+    return a, x0, y0
+
+
+def _interior(shape, rx, ry):
+    h, w = shape
+    m = np.zeros(shape, dtype=bool)
+    if w > 2 * rx and h > 2 * ry:
+        m[ry:h-ry, rx:w-rx] = True
+    return m
+
+
+def _tracks(mask, quality, max_step):
+    # Consecutive-row tracks. A row contributes one representative per
+    # contiguous candidate run; no missing rows or hidden continuations join.
+    active, finished = [], []
+    for y in range(mask.shape[0]):
+        xs = np.flatnonzero(mask[y])
+        groups = np.split(xs, np.flatnonzero(np.diff(xs) > 1) + 1) if len(xs) else []
+        points = []
+        for group in groups:
+            values = quality[y, group]
+            winners = group[values == values.max()]
+            points.append((int(winners[len(winners)//2]), y))
+        pairs = []
+        for i, track in enumerate(active):
+            for j, point in enumerate(points):
+                distance = abs(track[-1][0] - point[0])
+                if distance <= max_step:
+                    pairs.append((distance, i, j))
+        used_tracks, used_points, following = set(), set(), []
+        for _, i, j in sorted(pairs):
+            if i not in used_tracks and j not in used_points:
+                following.append(active[i] + [points[j]])
+                used_tracks.add(i)
+                used_points.add(j)
+        finished.extend(t for i, t in enumerate(active) if i not in used_tracks)
+        following.extend([p] for j, p in enumerate(points) if j not in used_points)
+        active = following
+    finished.extend(active)
+    return [np.asarray(t, dtype=np.float64) for t in finished]
+
+
+def _instance(concept, points, prepared, rx, ry):
+    a, ox, oy = prepared
+    lo = np.floor(points.min(axis=0)).astype(int)
+    hi = np.ceil(points.max(axis=0)).astype(int)
+    box = [int(lo[0]-rx+ox), int(lo[1]-ry+oy),
+           int(hi[0]+rx+1+ox), int(hi[1]+ry+1+oy)]
+    if box[0] < ox or box[1] < oy or box[2] > ox+a.shape[1] or box[3] > oy+a.shape[0]:
+        return None
+    middle = (len(points)-1) / 2.0
+    i, j = int(np.floor(middle)), int(np.ceil(middle))
+    center = (points[i] + points[j]) / 2.0
+    anchor = [int(np.floor(center[0]+0.5))+ox,
+              int(np.floor(center[1]+0.5))+oy]
+    return {'concept_id': concept, 'anchor': anchor, 'box': box}
+
+
+def _deduplicate(items):
+    kept = []
+    for item in items:
+        if item is None:
+            continue
+        b = item['box']
+        duplicate = False
+        for old in kept:
+            c = old['box']
+            overlap = max(0, min(b[2], c[2])-max(b[0], c[0])) * max(0, min(b[3], c[3])-max(b[1], c[1]))
+            small = min((b[2]-b[0])*(b[3]-b[1]), (c[2]-c[0])*(c[3]-c[1]))
+            if item['concept_id'] == old['concept_id'] and overlap > 0.75*small:
+                duplicate = True
+                break
+        if not duplicate:
+            kept.append(item)
+    return kept
+
+
+def _vertical(observation, polarity, concept):
+    p = _prepare(observation)
+    if p is None:
+        return []
+    a = p[0]
+    left, right = np.roll(a, 3, axis=1), np.roll(a, -3, axis=1)
+    contrast = polarity * (right-left)
+    bright = right if polarity == 1 else left
+    dark = left if polarity == 1 else right
+    gx = np.abs(np.roll(a, -1, axis=1)-np.roll(a, 1, axis=1))
+    gy = np.abs(np.roll(a, -1, axis=0)-np.roll(a, 1, axis=0))
+    mask = (contrast >= 32) & (bright >= 90) & (dark <= 100)
+    mask &= (gx >= 1.7*gy) & _interior(a.shape, 4, 2)
+    items = []
+    for t in _tracks(mask, contrast, 2):
+        if len(t) < 10:
+            continue
+        slope, intercept = np.polyfit(t[:, 1], t[:, 0], 1)
+        residual = np.abs(t[:, 0]-(slope*t[:, 1]+intercept))
+        if abs(slope) <= 0.38 and np.quantile(residual, 0.9) <= 1.8:
+            items.append(_instance(concept, t, p, 4, 2))
+    return _deduplicate(items)
+
+
+def detect_batch0_vertical_boundary_bright_right(observation):
+    return _vertical(observation, 1, 'batch0_vertical_boundary_bright_right')
+
+
+def detect_batch0_vertical_boundary_bright_left(observation):
+    return _vertical(observation, -1, 'batch0_vertical_boundary_bright_left')
+
+
+def _shoulder(observation, polarity, concept):
+    p = _prepare(observation)
+    if p is None:
+        return []
+    a = p[0]
+    left, right = np.roll(a, 4, axis=1), np.roll(a, -4, axis=1)
+    next_pixel = np.roll(a, -1, axis=1)
+    if polarity == 1:
+        crossing = (a <= 64) & (next_pixel > 64)
+        dark, bright = left, right
+    else:
+        crossing = (a > 64) & (next_pixel <= 64)
+        dark, bright = right, left
+    contrast = bright-dark
+    mask = crossing & (dark <= 80) & (bright >= 80) & (contrast >= 24)
+    mask &= _interior(a.shape, 5, 2)
+    items = []
+    for track in _tracks(mask, contrast, 5):
+        best = None
+        for length in range(16, min(44, len(track))+1):
+            for start in range(len(track)-length+1):
+                t = track[start:start+length]
+                y = t[:, 1]-t[0, 1]
+                x = t[:, 0]
+                n = max(5, length//3)
+                top = np.polyfit(y[:n], x[:n], 1)[0]
+                bottom = np.polyfit(y[-n:], x[-n:], 1)[0]
+                # Left shoulders move left going down, then become upright;
+                # right shoulders have the opposite horizontal motion.
+                upper_speed, lower_speed = -polarity*top, -polarity*bottom
+                displacement = -polarity*(np.median(x[-3:])-np.median(x[:3]))
+                if not (upper_speed >= 0.55 and -0.18 <= lower_speed <= 0.48):
+                    continue
+                if upper_speed-lower_speed < 0.4 or displacement < 6:
+                    continue
+                coefficients = np.polyfit(y, x, 2)
+                error = np.sqrt(np.mean((x-np.polyval(coefficients, y))**2))
+                if polarity*coefficients[0] <= 0.004 or error > 1.8:
+                    continue
+                # Reject reversals and isolated steps masquerading as bends.
+                dx = -polarity*np.diff(x)
+                if np.count_nonzero(dx < -1) > 1 or np.max(np.abs(dx)) > 5:
+                    continue
+                score = length + 2*displacement - 4*error
+                if best is None or score > best[0]:
+                    best = (score, t)
+        if best is not None:
+            t = best[1]
+            item = _instance(concept, t, p, 5, 2)
+            if item is not None:
+                # The middle of the supported change in tangent is the bend.
+                items.append(item)
+    return _deduplicate(items)
+
+
+def detect_batch0_upper_left_shoulder(observation):
+    return _shoulder(observation, 1, 'batch0_upper_left_shoulder')
+
+
+def detect_batch0_upper_right_shoulder(observation):
+    return _shoulder(observation, -1, 'batch0_upper_right_shoulder')
+
+
+def detect_batch0_bright_horizontal_lower_rim(observation):
+    p = _prepare(observation)
+    if p is None:
+        return []
+    a = p[0]
+    above = np.roll(a, 4, axis=0)
+    below = np.roll(a, -4, axis=0)
+    upper_rise, lower_drop = a-above, a-below
+    mask = (a >= 65) & (upper_rise >= 3) & (lower_drop >= 12)
+    mask &= (above-below >= 8)
+    mask &= (a >= np.roll(a, 2, axis=0)) & (a >= np.roll(a, -2, axis=0))
+    mask &= _interior(a.shape, 2, 5)
+    quality = np.minimum(upper_rise, lower_drop)
+    items = []
+    for transposed in _tracks(mask.T, quality.T, 2):
+        if len(transposed) < 14:
+            continue
+        t = transposed[:, ::-1]
+        slope, intercept = np.polyfit(t[:, 0], t[:, 1], 1)
+        residual = np.abs(t[:, 1]-(slope*t[:, 0]+intercept))
+        if abs(slope) <= 0.18 and np.quantile(residual, 0.9) <= 1.5:
+            items.append(_instance('batch0_bright_horizontal_lower_rim', t, p, 2, 5))
+    return _deduplicate(items)
+
+
+def detect_batch0_upright_dark_slit(observation):
+    p = _prepare(observation)
+    if p is None:
+        return []
+    a = p[0]
+    left_distance = np.zeros(a.shape, dtype=np.int32)
+    right_distance = np.zeros(a.shape, dtype=np.int32)
+    left_value, right_value = np.zeros_like(a), np.zeros_like(a)
+    # Every tested lateral sample, including failed searches, is contained
+    # by the nine-pixel horizontal support margin.
+    for distance in range(2, 9):
+        l = np.roll(a, distance, axis=1)
+        r = np.roll(a, -distance, axis=1)
+        valid_l = (left_distance == 0) & (l >= 90) & (l-a >= 32)
+        valid_r = (right_distance == 0) & (r >= 90) & (r-a >= 32)
+        left_distance[valid_l], right_distance[valid_r] = distance, distance
+        left_value[valid_l], right_value[valid_r] = l[valid_l], r[valid_r]
+    mask = (a <= 100) & (left_distance > 0) & (right_distance > 0)
+    mask &= (a <= np.roll(a, 1, axis=1)+0.5) & (a <= np.roll(a, -1, axis=1)+0.5)
+    mask &= _interior(a.shape, 9, 2)
+    quality = np.minimum(left_value-a, right_value-a)
+    items = []
+    for t in _tracks(mask, quality, 2):
+        if len(t) < 10:
+            continue
+        ix, iy = t[:, 0].astype(int), t[:, 1].astype(int)
+        widths = left_distance[iy, ix]+right_distance[iy, ix]
+        if len(t) < 1.5*float(np.median(widths)):
+            continue
+        slope, intercept = np.polyfit(t[:, 1], t[:, 0], 1)
+        residual = np.abs(t[:, 0]-(slope*t[:, 1]+intercept))
+        if abs(slope) > 0.35 or np.quantile(residual, 0.9) > 1.6:
+            continue
+        items.append(_instance('batch0_upright_dark_slit', t, p, 9, 2))
+    return _deduplicate(items)
+
+
+def perceive(observation):
+    detectors = (
+        detect_batch0_vertical_boundary_bright_right,
+        detect_batch0_vertical_boundary_bright_left,
+        detect_batch0_upper_left_shoulder,
+        detect_batch0_upper_right_shoulder,
+        detect_batch0_bright_horizontal_lower_rim,
+        detect_batch0_upright_dark_slit,
+    )
+    instances = []
+    for detector in detectors:
+        instances.extend(detector(observation))
+    instances.sort(key=lambda item: (item['concept_id'], item['anchor'][1], item['anchor'][0], tuple(item['box'])))
+    return {'instances': instances}

@@ -1,0 +1,47 @@
+Each attachment is a uint8 grayscale 224x224 masked observation.
+Only a 64x64 window is visible at its canvas location. Exterior pixels are 128.
+No window origin or separate visibility mask is supplied. Real visible pixels
+may also equal 128. Coordinates use x rightward, y downward, integer anchors
+in [0,223], and half-open boxes within [0,224]. Never treat mask boundaries as
+physical contours, or cropped fragments as complete shapes or true endpoints.
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+This is a Test-only classification
+request. Exactly ONE image is attached: the CURRENT masked observation.
+No Train examples, Train summary, concept catalog, or generated detector are supplied.
+Interpret current pixels directly and retain useful observations in state_note.
+Repeated or overlapping glimpses are not separate objects.
+
+Allowed classes:
+{"0": "T-shirt/top", "1": "Trouser", "2": "Pullover", "3": "Dress", "4": "Coat", "5": "Sandal", "6": "Shirt", "7": "Sneaker", "8": "Bag", "9": "Ankle boot"}
+Budget:
+{"observations_used": 14, "observations_remaining": 22, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: Window approximately x49\u2013113, y151\u2013215 is mostly black, with a faint gray curved/sloping feature along its upper edge near y155; object identity unclear.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: Window approximately x49\u2013113, y119\u2013183 shows light gray horizontal, slightly curved bands across its upper half and a mostly black lower half. Shape and garment type remain unclear.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: Window approximately x81\u2013145, y119\u2013183 shows a bright gray upper-right area and several horizontal gray bands above a dark lower portion. These could be footwear details, but identity remains unclear.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o003", "model_output": {"state_note": "o003: Window approximately x113\u2013177, y119\u2013183 shows a rounded bright upper area, darker horizontal bands around y140\u2013160, and black below. Footwear remains a hypothesis; upper silhouette is unseen.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o004", "model_output": {"state_note": "o004: Window x113\u2013177, y87\u2013151 shows mottled light/dark upper details above a bright sloping band at y119\u2013135 and a dark horizontal base near y140. Footwear is plausible; ankle height remains unseen.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o005", "model_output": {"state_note": "o005: Window x113\u2013177, y55\u2013119 is black above about y80, with irregular light gray patches below, continuous with the previously seen footwear-like region. Move left to inspect the upper profile.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o006", "model_output": {"state_note": "o006: Window x81\u2013145, y55\u2013119 shows black above a mottled gray region whose upper edge rises from about y99 at left to y82 at right. Footwear remains plausible; move left to inspect its rear profile.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o007", "model_output": {"state_note": "o007: Window x49\u2013113, y55\u2013119 is black above an irregular pale region near y100\u2013119; its upper edge rises slightly toward the right. Footwear hypothesis remains unresolved between shoe types.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o008", "model_output": {"state_note": "o008: Window x49\u2013113, y87\u2013151 shows several pale upright patches around y103\u2013125 above a pale horizontal band near y130\u2013138, with dark gaps between patches. Footwear remains plausible; these details do not yet distinguish sandal from sneaker.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o009", "model_output": {"state_note": "o009: Window x81\u2013145, y87\u2013151 shows bright irregular upright patches above a dark horizontal gap and layered pale bands near y122\u2013139. Footwear is plausible; sandal versus sneaker remains unresolved. Inspect farther right for the outer profile.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o010", "model_output": {"state_note": "o010: Window x113\u2013177, y87\u2013151 shows irregular bright diagonal patches above a broad pale band around y122\u2013136 and dark base near y140. Sandal or sneaker remains plausible; right outer profile is still unseen.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o011", "model_output": {"state_note": "o011: Window approximately x145\u2013209, y87\u2013151 shows a pale rounded/sloping right-side region above a bright horizontal band near y128\u2013138 and dark base below. This supports footwear, but sandal versus sneaker remains unresolved; the far-left profile is unobserved.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o012", "model_output": {"state_note": "o012: Window x113\u2013177, y87\u2013151 shows mottled diagonal bright patches above a broad pale horizontal sole-like band and dark base. Footwear is supported; sandal versus sneaker remains uncertain. Far-left profile still needs inspection.", "action": "left", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o013", "step": 13, "previous_action": "left"}

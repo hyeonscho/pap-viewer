@@ -1,0 +1,47 @@
+Each attachment is a uint8 grayscale 224x224 masked observation.
+Only a 64x64 window is visible at its canvas location. Exterior pixels are 128.
+No window origin or separate visibility mask is supplied. Real visible pixels
+may also equal 128. Coordinates use x rightward, y downward, integer anchors
+in [0,223], and half-open boxes within [0,224]. Never treat mask boundaries as
+physical contours, or cropped fragments as complete shapes or true endpoints.
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+This is a Test-only classification
+request. Exactly ONE image is attached: the CURRENT masked observation.
+No Train examples, Train summary, concept catalog, or generated detector are supplied.
+Interpret current pixels directly and retain useful observations in state_note.
+Repeated or overlapping glimpses are not separate objects.
+
+Allowed classes:
+{"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9"}
+Budget:
+{"observations_used": 4, "observations_remaining": 32, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: visible window x120\u2013183, y50\u2013113; black region at left reaches x137\u2013139 with a nearly vertical, slightly curved right edge; white to its right. Shape continues beyond window.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: window x88\u2013151, y50\u2013113 shows a thick black vertical stroke around x103\u2013139, with white on both sides; stroke continues beyond top and bottom. Digit remains uncertain.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: window x88\u2013151, y82\u2013145 shows a thick black near-vertical stroke around x102\u2013138, white on both sides, continuing beyond both vertical window edges.", "action": "down", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o003", "step": 3, "previous_action": "down"}

@@ -1,0 +1,47 @@
+Each attachment is a uint8 grayscale 224x224 masked observation.
+Only a 64x64 window is visible at its canvas location. Exterior pixels are 128.
+No window origin or separate visibility mask is supplied. Real visible pixels
+may also equal 128. Coordinates use x rightward, y downward, integer anchors
+in [0,223], and half-open boxes within [0,224]. Never treat mask boundaries as
+physical contours, or cropped fragments as complete shapes or true endpoints.
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+This is a Test-only classification
+request. Exactly ONE image is attached: the CURRENT masked observation.
+No Train examples, Train summary, concept catalog, or generated detector are supplied.
+Interpret current pixels directly and retain useful observations in state_note.
+Repeated or overlapping glimpses are not separate objects.
+
+Allowed classes:
+{"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9"}
+Budget:
+{"observations_used": 16, "observations_remaining": 20, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: Window at approximately x105\u2013168, y59\u2013122 shows a thick black curved stroke entering from the left near y63 and descending to x120\u2013145 at the bottom; shape continues beyond view.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: Window approximately x105\u2013168, y91\u2013154 shows a thick, slightly right-slanting black stroke from x116\u2013143 at top to x126\u2013152 at bottom; it continues beyond both vertical edges of view.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: Window approximately x105\u2013168, y123\u2013186 shows a thick black stroke descending from x124\u2013146 at top to x134\u2013157 at bottom, continuing below the window; white on both sides.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o003", "model_output": {"state_note": "o003: Window approximately x105\u2013168, y155\u2013218 shows a thick black stroke slanting right from x127\u2013153 at top to x148\u2013168 at bottom; white beside it. Lower extent remains cropped. Need upper or left structure to distinguish digit hypotheses.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o004", "model_output": {"state_note": "o004: Window approximately x105\u2013168, y123\u2013186 again shows a thick black stroke slanting slightly right downward, with white on both sides; its upper and lower extents remain outside view.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o005", "model_output": {"state_note": "o005: Window approximately x105\u2013168, y91\u2013154 shows a thick black descending stroke around x116\u2013152, with white on both sides; upper structure remains outside view.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o006", "model_output": {"state_note": "o006: Window approximately x105\u2013168, y59\u2013122 shows black entering its left edge near y63\u201396 and curving into a thick descending stroke around x119\u2013145. Upper-left structure remains unseen.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o007", "model_output": {"state_note": "o007: Window approximately x73\u2013136, y59\u2013122 shows a broad black horizontal upper stroke around y63\u201398 joining a descending stroke at x117\u2013136. Upper stroke continues past the left window edge; digit hypothesis remains uncertain.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o008", "model_output": {"state_note": "o008: Window approximately x41\u2013104, y59\u2013122 shows a broad black horizontal stroke around y63\u201399, with an uneven rounded lower edge and white below. Its left extent is cropped; prior views show a connected stroke descending rightward.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o009", "model_output": {"state_note": "o009: Window approximately x9\u201372, y59\u2013122 shows the rounded left end of the broad upper stroke at x38\u201360, y62\u2013100, continuing right. Prior views show a long descending stroke slanting right; 1 and 7 remain hypotheses.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o010", "model_output": {"state_note": "o010: Window approximately x9\u201372, y91\u2013154 is white except the lower edge of the previously seen upper stroke at x45\u201372, y91\u2013101. No additional stroke appears below it here; lower-right structure remains unobserved.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o011", "model_output": {"state_note": "o011: Window approximately x41\u2013104, y91\u2013154 shows only the lower edge of the upper black stroke at y91\u2013101, with white below. Bottom of the long rightward-slanting descending stroke remains unseen; 1 and 7 are hypotheses.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o012", "model_output": {"state_note": "o012: Window approximately x73\u2013136, y91\u2013154 shows the upper stroke's lower edge near y97 joining a black descending stroke at x117\u2013136; white below and left. Lower endpoint remains unseen; 1 and 7 remain hypotheses.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o013", "model_output": {"state_note": "o013: Visible window x105\u2013168, y91\u2013154 shows a thick black stroke descending slightly rightward, from about x117\u2013143 to x126\u2013152, with white on both sides. Its lower endpoint remains unseen; 1 and 7 remain hypotheses.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o014", "model_output": {"state_note": "o014: Window x105\u2013168, y123\u2013186 shows a thick black stroke slanting right downward, approximately x124\u2013156, with white on both sides. Lower endpoint remains unseen; upper bar and descending stroke leave 1 and 7 as hypotheses.", "action": "down", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o015", "step": 15, "previous_action": "down"}

@@ -1,0 +1,59 @@
+Each attachment is a uint8 grayscale 224x224 masked observation.
+Only a 64x64 window is visible at its canvas location. Exterior pixels are 128.
+No window origin or separate visibility mask is supplied. Real visible pixels
+may also equal 128. Coordinates use x rightward, y downward, integer anchors
+in [0,223], and half-open boxes within [0,224]. Never treat mask boundaries as
+physical contours, or cropped fragments as complete shapes or true endpoints.
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+You receive frozen visual concept definitions and
+the actual outputs of a frozen detector for the CURRENT observation only.
+No labeled Train examples or past detector archive are supplied.
+Interpret IDs using their visual definitions and geometry, and use your existing
+knowledge of the allowed classes. Detections can be wrong or incomplete.
+No detection means unknown, not verified absence. There is no complete visibility
+map. Repeated detections are not independent confirmations. Nearby records may
+describe the same structure. Cite observation IDs, not concept IDs, as evidence_ids.
+Do not infer physical instance counts, connections, or closure from record counts
+or proximity alone. Do not add inferred features to the evidence record.
+Exactly ONE attached masked image
+shows the current observation processed by the detector. Use both visible pixels
+and detector outputs; note discrepancies rather than treating detections as truth.
+
+Allowed classes:
+{"0": "T-shirt/top", "1": "Trouser", "2": "Pullover", "3": "Dress", "4": "Coat", "5": "Sandal", "6": "Shirt", "7": "Sneaker", "8": "Bag", "9": "Ankle boot"}
+Budget:
+{"observations_used": 11, "observations_remaining": 25, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: Window near x53\u2013116,y151\u2013214 shows a bright textured region with a curved lower edge and narrow bright ridge near (83,202), dark pixels below. Could be footwear; full shape unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: Visible x85\u2013148,y151\u2013214 contains a bright textured region on the left with a diagonal curved edge rising rightward, and dark pixels to the right and below. Footwear remains a hypothesis; no detector instances.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: Window x85\u2013148,y119\u2013182 shows a narrow bright curved band rising rightward from about (110,174) to (146,128), with dark areas on both sides. Detector labels a bend near (126,142); object identity remains unclear.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o003", "model_output": {"state_note": "o003: Window x117\u2013180,y119\u2013182 shows a narrow bright curved band rising rightward from near (120,169) toward (169,121), dark on both sides. Detector reports a short vertical transition near (121,158). Band identity remains uncertain.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o004", "model_output": {"state_note": "o004: Window x117\u2013180,y87\u2013150 shows a bright diagonal band rising rightward from near (131,147) to (171,108), with a short upright bright portion near x173 at the top. Dark pixels flank the band; no detector instances. Identity remains uncertain.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o005", "model_output": {"state_note": "o005: Window x117\u2013180,y55\u2013118 shows mostly dark pixels, a thin bright sloping strip at the top, and a bright near-vertical curved band around x167\u2013177 on the right. Detector supports local bright-right transitions; overall identity remains unclear.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o006", "model_output": {"state_note": "o006: Window x85\u2013148,y55\u2013118 shows a short pale, roughly horizontal band near y60\u201370 against mostly dark pixels below; no detector instances. Its relation to the earlier diagonal band is unknown.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o007", "model_output": {"state_note": "o007: Window x85\u2013148,y23\u201386 shows a pale narrow band slanting slightly upward rightward around y50\u201365, with dark pixels above and below. Detector reports a local lower bright rim near (117,59); overall object remains uncertain.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o008", "model_output": {"state_note": "o008: Window x117\u2013180,y23\u201386 shows a pale band rising slightly rightward near y43\u201360 and a bright near-vertical strip near x169\u2013178. Dark pixels occupy most of the window; detector reports two local bright-right transitions. Overall shape remains unclear.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o009", "model_output": {"state_note": "o009: Window x149\u2013212,y23\u201386 shows pale curved material near x174\u2013190 at the top, a bright crosswise band near y45, and a broader light region toward the lower right. Dark pixels lie to the left; detector reports local bright-right transitions near (176,60) and (166,79). Bag or footwear remains uncertain.", "action": "down", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o010", "step": 10, "previous_action": "down"}
+Frozen definitions:
+[{"id": "batch0_vertical_boundary_bright_right", "definition": "A locally near-vertical transition with dark pixels on the left and brighter pixels on the right.", "anchor_rule": "Anchor at the midpoint of the supported transition.", "box_rule": "Enclose the observed segment and nearby contrasting pixels on both sides.", "support_rule": "Require sustained vertical contrast within visible content. Exclude mask edges and do not infer continuation."}, {"id": "batch0_vertical_boundary_bright_left", "definition": "A locally near-vertical transition with brighter pixels on the left and dark pixels on the right.", "anchor_rule": "Anchor at the midpoint of the supported transition.", "box_rule": "Enclose the observed transition and local contrast on both sides.", "support_rule": "Require a sustained near-vertical segment inside visible content. Exclude mask edges and inferred extensions."}, {"id": "batch0_upper_left_shoulder", "definition": "A curved transition rising toward the right from a near-vertical left margin, with darkness above-left and brighter material below-right.", "anchor_rule": "Anchor at the supported bend between the upright and rising portions.", "box_rule": "Enclose the visible bend and adjacent contrast without completing an outline.", "support_rule": "Require visible curvature and the specified sidedness within the window. Cropping does not establish endpoints."}, {"id": "batch0_upper_right_shoulder", "definition": "A curved transition descending toward the right into a near-vertical right margin, with brighter material below-left and darkness above-right.", "anchor_rule": "Anchor at the supported bend into the upright margin.", "box_rule": "Enclose the observed curve and immediate contrast on both sides.", "support_rule": "Require curvature with the specified orientation inside visible content. Exclude mask boundaries and hidden contour completion."}, {"id": "batch0_bright_horizontal_lower_rim", "definition": "A narrow, approximately horizontal bright ridge along a lighter region's lower boundary, with visibly darker pixels below.", "anchor_rule": "Anchor at the midpoint of the supported ridge.", "box_rule": "Enclose the ridge and visible context immediately above and below.", "support_rule": "Require a local brightness ridge and lower-side contrast inside the window. Do not infer endpoints or use the window bottom as evidence."}, {"id": "batch0_upright_dark_slit", "definition": "A narrow, vertically elongated dark mark with brighter pixels supporting both lateral sides.", "anchor_rule": "Anchor at the midpoint of the supported dark centerline.", "box_rule": "Enclose the visible dark segment and its bright lateral flanks.", "support_rule": "Require vertical elongation and two visible bright flanks. Do not infer closure, depth, or true endpoints."}]
+Current detector output:
+{"instances": [{"concept_id": "batch0_vertical_boundary_bright_right", "anchor": [175, 63], "box": [171, 55, 181, 72]}, {"concept_id": "batch0_vertical_boundary_bright_right", "anchor": [167, 83], "box": [162, 72, 172, 95]}]}

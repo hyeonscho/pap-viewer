@@ -1,0 +1,1 @@
+{"additionalProperties":false,"properties":{"action":{"enum":["up","down","left","right","answer"],"type":"string"},"class_id":{"maximum":9,"minimum":0,"type":["integer","null"]},"evidence_ids":{"items":{"type":"string"},"type":"array"},"state_note":{"type":"string"}},"required":["action","class_id","evidence_ids","state_note"],"type":"object"}

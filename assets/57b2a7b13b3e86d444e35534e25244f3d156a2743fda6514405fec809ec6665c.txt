@@ -1,0 +1,47 @@
+Each attachment is a uint8 grayscale 224x224 masked observation.
+Only a 64x64 window is visible at its canvas location. Exterior pixels are 128.
+No window origin or separate visibility mask is supplied. Real visible pixels
+may also equal 128. Coordinates use x rightward, y downward, integer anchors
+in [0,223], and half-open boxes within [0,224]. Never treat mask boundaries as
+physical contours, or cropped fragments as complete shapes or true endpoints.
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+This is a Test-only classification
+request. Exactly ONE image is attached: the CURRENT masked observation.
+No Train examples, Train summary, concept catalog, or generated detector are supplied.
+Interpret current pixels directly and retain useful observations in state_note.
+Repeated or overlapping glimpses are not separate objects.
+
+Allowed classes:
+{"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9"}
+Budget:
+{"observations_used": 15, "observations_remaining": 21, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: Window near x9\u201372,y69\u2013132 shows white left area and a thick black region at x48\u201372 extending beyond right and bottom edges; digit identity unclear.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: Window x41\u2013104,y69\u2013132 shows a thick black curved stroke on the left, white area at x82\u2013104,y91\u2013123, and black along the bottom. Shape continues beyond window; digit unclear.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: Window x73\u2013136,y69\u2013132 shows white region touching top and right edges, with a rounded lower-left boundary near x81\u2013111,y91\u2013124; black fills the lower edge. Contours continue outside the window; digit unclear.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o003", "model_output": {"state_note": "o003: Window x73\u2013136,y101\u2013164 is mostly black, with a white notch from the top reaching about y124 at x95 and a small white fragment at bottom left. Right-side continuation remains unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o004", "model_output": {"state_note": "o004: Window x105\u2013168,y101\u2013164 is mostly black; white enters at upper left to about x131,y102 and at bottom right near x163,y160. Lower structure remains unknown.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o005", "model_output": {"state_note": "o005: Window x105\u2013168,y133\u2013196 shows black above a rising boundary from about (116,184) to (168,157), with white below. No enclosed opening visible here; lower-left structure remains unknown.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o006", "model_output": {"state_note": "o006: Window x73\u2013136,y133\u2013196 shows solid black above a rounded lower contour reaching y184 near x104\u2013116, with white below and at lower corners. Upper digit structure remains unknown.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o007", "model_output": {"state_note": "o007: Window x73\u2013136,y101\u2013164 again shows black below a white top notch ending near (96,124); small white fragment at lower left. Upper structure still unknown.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o008", "model_output": {"state_note": "o008: Window x73\u2013136,y69\u2013132 shows the same white opening tapering to a rounded lower tip near (97,124), surrounded by black on left and bottom. Its upper extent remains unseen.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o009", "model_output": {"state_note": "o009: Window x73\u2013136,y37\u2013100 shows black at upper left, with a curved right boundary descending from about (111,53) to (80,91); white fills the right side. Upper and right structure remain unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o010", "model_output": {"state_note": "o010: Window x105\u2013168,y37\u2013100 is mostly white, with black at upper left reaching x113 and a black curve entering lower right near (153,88), extending left to about (134,100). Right-side structure remains unseen.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o011", "model_output": {"state_note": "o011: Window x137\u2013200,y37\u2013100 is white above a black boundary rising from about (140,95) to (195,83); black continues below the window. Right and lower contours remain unknown.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o012", "model_output": {"state_note": "o012: Window x137\u2013200,y69\u2013132 shows white above a black upper boundary rising from about (140,95) to (195,83); black extends downward, with a small white sliver at lower right. Lower-right contour remains unseen.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o013", "model_output": {"state_note": "o013: Window x137\u2013200,y101\u2013164 shows black above a curved lower-right boundary from roughly (150,164) to (200,128), with white below/right. Together with prior views this forms a broad lower lobe; uppermost structure is still unknown.", "action": "up", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o014", "step": 14, "previous_action": "up"}

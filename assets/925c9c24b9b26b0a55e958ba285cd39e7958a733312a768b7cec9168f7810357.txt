@@ -1,0 +1,59 @@
+Each attachment is a uint8 grayscale 224x224 masked observation.
+Only a 64x64 window is visible at its canvas location. Exterior pixels are 128.
+No window origin or separate visibility mask is supplied. Real visible pixels
+may also equal 128. Coordinates use x rightward, y downward, integer anchors
+in [0,223], and half-open boxes within [0,224]. Never treat mask boundaries as
+physical contours, or cropped fragments as complete shapes or true endpoints.
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+You receive frozen visual concept definitions and
+the actual outputs of a frozen detector for the CURRENT observation only.
+No labeled Train examples or past detector archive are supplied.
+Interpret IDs using their visual definitions and geometry, and use your existing
+knowledge of the allowed classes. Detections can be wrong or incomplete.
+No detection means unknown, not verified absence. There is no complete visibility
+map. Repeated detections are not independent confirmations. Nearby records may
+describe the same structure. Cite observation IDs, not concept IDs, as evidence_ids.
+Do not infer physical instance counts, connections, or closure from record counts
+or proximity alone. Do not add inferred features to the evidence record.
+Exactly ONE attached masked image
+shows the current observation processed by the detector. Use both visible pixels
+and detector outputs; note discrepancies rather than treating detections as truth.
+
+Allowed classes:
+{"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9"}
+Budget:
+{"observations_used": 12, "observations_remaining": 24, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: visible window x146\u2013209, y118\u2013181 shows a thick dark fragment along its left side, with a curved right contour near x177 and white to the right; fragment is cropped above, below, and left. No detections.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: window x114\u2013177, y118\u2013181 shows a thick dark right-side curve around a white recess opening left near y148; dark portions extend through the top, left, and bottom crop edges. No detections. Digit remains uncertain.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: window x114\u2013177, y86\u2013149 shows a thick dark band sloping down-right from the left edge near y112 toward the right edge near y140, with white above and below its left portion. No detections; both ends are cropped.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o003", "model_output": {"state_note": "o003: window x82\u2013145, y86\u2013149 shows a thick dark band sloping down-right across the window, with white above and below; both ends are cropped. No detections. Upper-left continuation remains unknown.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o004", "model_output": {"state_note": "o004: window x82\u2013145, y54\u2013117 shows white recess opening right, with a rounded left contour near (90,81) and dark above, left, and below. Dark lower edge slopes down-right. No detections; outer contours remain cropped.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o005", "model_output": {"state_note": "o005: window x82\u2013145, y22\u201385 shows a dark upper band near y32\u201360, rising from a thicker left portion; white lies above and below its right portion. Detector reports horizontal and rising-right bands. Right continuation is cropped; 5 and 8 remain hypotheses.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o006", "model_output": {"state_note": "o006: window x114\u2013177, y22\u201385 shows a thick near-horizontal dark band around y32\u201360, with white above and below. Detector agrees on horizontal orientation. Both lateral continuations are cropped; right endpoint remains unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o007", "model_output": {"state_note": "o007: window x146\u2013209, y22\u201385 shows the upper dark band ending in a rounded right cap near (193,46), with white beyond and below. Detector supports a horizontal segment. This favors 5; lower structure remains incomplete.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o008", "model_output": {"state_note": "o008: window x146\u2013209, y54\u2013117 is mostly white, with dark fragments at the upper-left and lower-left edges; no upright connection is visible in this window. No detections. Lower digit structure remains incomplete.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o009", "model_output": {"state_note": "o009: window x146\u2013209, y86\u2013149 shows a dark fragment entering from the left near y111 and broadening to a curved right contour near x177 at the bottom crop; white above and right. No detections. Lower continuation remains unknown.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o010", "model_output": {"state_note": "o010: window x146\u2013209, y118\u2013181 shows the same thick right-side curve seen in o000, with right contour near x177 and a small white recess at the left edge near y151. No detections; bottom remains cropped. Digit 5 remains a hypothesis.", "action": "down", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o011", "step": 11, "previous_action": "down"}
+Frozen definitions:
+[{"id": "batch0_vertical_dark_band", "definition": "A locally upright dark band, allowing slight lean, with approximately parallel lateral contours.", "anchor_rule": "Round the midpoint of the supported upright centerline segment to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the supported segment and visible light margins on both sides.", "support_rule": "Require both lateral contours over enough length to establish upright orientation. Exclude crop edges and rounded caps from contour fitting."}, {"id": "batch0_horizontal_dark_band", "definition": "A locally horizontal dark band with approximately parallel upper and lower contours.", "anchor_rule": "Round the midpoint of the supported horizontal centerline segment to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the segment and visible light margins above and below.", "support_rule": "Require visible upper and lower contours supporting horizontal orientation. Longitudinal cropping supplies no endpoint evidence."}, {"id": "batch0_dark_band_rising_right", "definition": "A dark band whose supported centerline rises toward the right, allowing uneven contours and varying steepness.", "anchor_rule": "Round the midpoint of the supported upward-right centerline segment to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the diagonal segment and visible light margins along both sides.", "support_rule": "Require two visible lateral contours and consistent net upward-right progression. Do not infer endpoints at crop edges."}, {"id": "batch0_left_to_down_elbow", "definition": "A dark band connecting a leftward arm to a downward arm around a visible light recess below-left. Complete outer-corner rounding is not established.", "anchor_rule": "Round the intersection of fitted local arm centerlines to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the supported inner turn, short portions of both arms, and adjacent visible light.", "support_rule": "Require connected dark arms and a visible inner contour turning around the below-left recess. Cropped outer contours remain unspecified."}, {"id": "batch0_up_to_right_elbow", "definition": "A dark band connecting an upper arm to a rightward arm around a visible upper-right light recess.", "anchor_rule": "Round the intersection of fitted local arm centerlines to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the bend, supported arm portions, and visible inner and outer light margins.", "support_rule": "Require a continuous transition between both arms and a visible upper-right inner recess. Do not infer continuation outside the window."}, {"id": "batch0_rounded_downward_tip", "definition": "A dark shaft terminating downward in a rounded cap with visible light beyond its lower extremity.", "anchor_rule": "Round the midpoint of the terminal cap across the local shaft direction to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the cap, a short supported shaft portion, and the visible surrounding light.", "support_rule": "Require a continuous closing contour joining both shaft sides and visible light below the cap. A crop boundary cannot establish termination."}]
+Current detector output:
+{"instances": []}

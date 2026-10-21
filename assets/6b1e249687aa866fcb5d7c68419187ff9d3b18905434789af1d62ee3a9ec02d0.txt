@@ -1,0 +1,456 @@
+import numpy as np
+from scipy import ndimage
+
+
+_IDS = (
+    'batch0_vertical_dark_band',
+    'batch0_horizontal_dark_band',
+    'batch0_dark_band_rising_right',
+    'batch0_left_to_down_elbow',
+    'batch0_up_to_right_elbow',
+    'batch0_rounded_downward_tip',
+)
+
+
+def _prepare(observation):
+    a = np.asarray(observation)
+    if a.shape != (224, 224) or a.dtype != np.uint8:
+        raise ValueError('Expected a (224,224) uint8 array')
+    yy, xx = np.nonzero(a != 128)
+    if xx.size == 0:
+        return None
+    xmin = max(0, int(xx.max()) - 63)
+    xmax = min(160, int(xx.min()))
+    ymin = max(0, int(yy.max()) - 63)
+    ymax = min(160, int(yy.min()))
+    if xmin > xmax or ymin > ymax:
+        raise ValueError('No consistent in-bounds 64x64 visibility window')
+    # Intersection of every consistent window; retain every pixel value inside.
+    x0, y0 = xmax, ymax
+    a = a[y0:ymin + 64, x0:xmin + 64]
+    dark = a <= 96
+    light = a >= 176
+    labels, _ = ndimage.label(dark, structure=np.ones((3, 3), bool))
+    return dark, light, labels, x0, y0
+
+
+def _runs(bits):
+    ends = np.flatnonzero(np.diff(np.r_[False, bits, False].astype(np.int8)))
+    return list(zip(ends[::2], ends[1::2]))
+
+
+def _line(t, q):
+    t, q = np.asarray(t, float), np.asarray(q, float)
+    tc, qc = float(t.mean()), float(q.mean())
+    den = float(np.sum((t - tc) ** 2))
+    m = float(np.sum((t - tc) * (q - qc)) / den) if den else 0.0
+    b = qc - m * tc
+    return m, b, float(np.max(np.abs(q - m * t - b)))
+
+
+def _instance(p, concept, anchor, box):
+    d, _, _, ox, oy = p
+    x0, y0, x1, y1 = map(int, box)
+    ax, ay = map(lambda v: int(np.rint(v)), anchor)
+    if not (0 <= x0 <= ax < x1 <= d.shape[1] and
+            0 <= y0 <= ay < y1 <= d.shape[0]):
+        return None
+    return {'concept_id': concept,
+            'anchor': [ax + ox, ay + oy],
+            'box': [x0 + ox, y0 + oy, x1 + ox, y1 + oy]}
+
+
+def _chains(rows, jump=6.0):
+    active, done = [], []
+    for nodes in rows:
+        pairs = []
+        for i, c in enumerate(active):
+            old = c[-1]
+            for j, n in enumerate(nodes):
+                delta = abs((old[1] + old[2] - n[1] - n[2]) / 2)
+                overlap = max(old[1], n[1]) <= min(old[2], n[2]) + 1
+                if old[3] == n[3] and delta <= jump and (overlap or old[1] == old[2]):
+                    pairs.append((delta, i, j))
+        ui, uj, following = set(), set(), []
+        for _, i, j in sorted(pairs):
+            if i not in ui and j not in uj:
+                following.append(active[i] + [nodes[j]])
+                ui.add(i)
+                uj.add(j)
+        done.extend(c for i, c in enumerate(active) if i not in ui)
+        following.extend([n] for j, n in enumerate(nodes) if j not in uj)
+        active = following
+    return done + active
+
+
+def _sections(p, transpose=False, margin=2):
+    d, light, labels = p[:3]
+    if transpose:
+        d, light, labels = d.T, light.T, labels.T
+    rows = []
+    for t in range(d.shape[0]):
+        nodes = []
+        for lo, end in _runs(d[t]):
+            if not 4 <= end - lo <= 48:
+                continue
+            if lo < margin or end + margin > d.shape[1]:
+                continue
+            if light[t, lo-margin:lo].all() and light[t, end:end+margin].all():
+                nodes.append((t, float(lo), float(end - 1), int(labels[t, lo])))
+        rows.append(nodes)
+    return rows
+
+
+def _bands(observation, kind):
+    p = _prepare(observation)
+    if p is None:
+        return []
+    best = {}
+    axes = (False, True) if kind == 2 else (kind == 1,)
+    for transpose in axes:
+        for chain in _chains(_sections(p, transpose)):
+            z = np.asarray(chain, float)
+            if len(z) < 12:
+                continue
+            for start in range(len(z) - 11):
+                for end in range(len(z), start + 11, -1):
+                    s = z[start:end]
+                    t, lo, hi = s[:, 0], s[:, 1], s[:, 2]
+                    w = hi - lo + 1
+                    c = (lo + hi) / 2
+                    m, b, error = _line(t, c)
+                    ml, _, el = _line(t, lo)
+                    mh, _, eh = _line(t, hi)
+                    length = float((t[-1] - t[0]) * np.sqrt(1 + m*m))
+                    width = float(np.median(w))
+                    if kind == 2:
+                        # Diagonal contours may be uneven and need not be parallel.
+                        if not -3.2 <= m <= -0.34 or c[0] - c[-1] < 7:
+                            continue
+                        if np.count_nonzero(np.diff(c) > 1.5) > max(1, len(c)//8):
+                            continue
+                        if error > 4 or max(el, eh) > 5:
+                            continue
+                        if np.min(w) < 0.5 * width or np.max(w) > 1.65 * width:
+                            continue
+                        if length < max(16, 0.65 * width):
+                            continue
+                    else:
+                        if abs(m) > 0.32 or abs(ml-mh) > 0.23:
+                            continue
+                        if max(error, el, eh) > 2.1:
+                            continue
+                        if np.ptp(w) > max(4, 0.24 * width):
+                            continue
+                        if abs(np.median(w[:3])-np.median(w[-3:])) > max(2.5, 0.16*width):
+                            continue
+                        # A tiny transverse slice of a broad bend is not an arm.
+                        if length < max(14, 0.65 * width):
+                            continue
+                    mid = (t[0] + t[-1]) / 2
+                    q = m * mid + b
+                    if transpose:
+                        anchor = (mid, q)
+                        box = (int(t[0]), int(lo.min())-2,
+                               int(t[-1])+1, int(hi.max())+3)
+                    else:
+                        anchor = (q, mid)
+                        box = (int(lo.min())-2, int(t[0]),
+                               int(hi.max())+3, int(t[-1])+1)
+                    item = _instance(p, _IDS[kind], anchor, box)
+                    if item is None:
+                        continue
+                    component = int(s[0, 3])
+                    score = length - error
+                    if component not in best or score > best[component][0]:
+                        best[component] = (score, item)
+                    break
+    return [best[k][1] for k in sorted(best)]
+
+
+def detect_batch0_vertical_dark_band(observation):
+    return _bands(observation, 0)
+
+
+def detect_batch0_horizontal_dark_band(observation):
+    return _bands(observation, 1)
+
+
+def detect_batch0_dark_band_rising_right(observation):
+    return _bands(observation, 2)
+
+
+def _edge_parts(p, horizontal, positive):
+    d, light, labels = p[:3]
+    if horizontal:
+        d, light, labels = d.T, light.T, labels.T
+    rows = []
+    for t in range(d.shape[0]):
+        if positive:
+            positions = np.flatnonzero(light[t, :-1] & d[t, 1:])
+            nodes = [(t, q+0.5, q+0.5, int(labels[t, q+1])) for q in positions]
+        else:
+            positions = np.flatnonzero(d[t, :-1] & light[t, 1:])
+            nodes = [(t, q+0.5, q+0.5, int(labels[t, q])) for q in positions]
+        rows.append(nodes)
+    parts = []
+    for chain in _chains(rows, 3):
+        z = np.asarray(chain, float)
+        for size in (8, 12, 18, 26, 38, 54):
+            if size > len(z):
+                continue
+            starts = sorted(set(range(0, len(z)-size+1, 3)) | {len(z)-size})
+            for start in starts:
+                s = z[start:start+size]
+                m, b, error = _line(s[:, 0], s[:, 1])
+                if abs(m) <= 0.32 and error <= 1.4:
+                    parts.append((m, b, s, int(s[0, 3])))
+    return parts
+
+
+def _arm(p, part, horizontal, positive):
+    d, light = p[:2]
+    pts, support, widths = [], [], []
+    for t, q, _, _ in part[2]:
+        t = int(t)
+        k = int(np.ceil(q)) if positive else int(np.floor(q))
+        row = d[:, t] if horizontal else d[t]
+        lr = light[:, t] if horizontal else light[t]
+        lo, hi = k, k
+        while lo > 0 and row[lo-1]:
+            lo -= 1
+        while hi+1 < len(row) and row[hi+1]:
+            hi += 1
+        if lo == 0 or hi+1 == len(row):
+            continue
+        if not (lr[lo-1] and lr[hi+1]) or not 5 <= hi-lo+1 <= 46:
+            continue
+        pts.append((t, (lo+hi)/2))
+        widths.append(hi-lo+1)
+        if horizontal:
+            support.extend(((t, lo-1), (t, hi+1)))
+        else:
+            support.extend(((lo-1, t), (hi+1, t)))
+    if len(pts) < 5:
+        return None
+    pts = np.asarray(pts, float)
+    m, b, error = _line(pts[:, 0], pts[:, 1])
+    if abs(m) > 0.4 or error > 2.5:
+        return None
+    if np.ptp(widths) > max(5, 0.35*np.median(widths)):
+        return None
+    return m, b, float(np.median(widths)), support, pts
+
+
+def _connected_inner_turn(d, light, sh, sv, horizontal_positive, vertical_positive, box):
+    # Trace only genuine dark/light interfaces. The artificial crop perimeter
+    # never contributes an edge. Restrict the topology test to reported support.
+    x0, y0, x1, y1 = box
+    local_d = d[y0:y1, x0:x1]
+    local_l = light[y0:y1, x0:x1]
+    boundary = np.zeros(local_d.shape, bool)
+    if local_d.shape[0] > 1:
+        pairs = (local_l[:-1] & local_d[1:]) if horizontal_positive else (local_d[:-1] & local_l[1:])
+        boundary[1:] |= pairs if horizontal_positive else False
+        boundary[:-1] |= pairs if not horizontal_positive else False
+    if local_d.shape[1] > 1:
+        pairs = (local_l[:, :-1] & local_d[:, 1:]) if vertical_positive else (local_d[:, :-1] & local_l[:, 1:])
+        boundary[:, 1:] |= pairs if vertical_positive else False
+        boundary[:, :-1] |= pairs if not vertical_positive else False
+    edge_labels, _ = ndimage.label(boundary, structure=np.ones((3, 3), bool))
+    htags, vtags = set(), set()
+    for t, q, _, _ in sh:
+        x = int(t)-x0
+        y = (int(np.ceil(q)) if horizontal_positive else int(np.floor(q)))-y0
+        if 0 <= y < edge_labels.shape[0] and 0 <= x < edge_labels.shape[1]:
+            htags.add(int(edge_labels[y, x]))
+    for t, q, _, _ in sv:
+        y = int(t)-y0
+        x = (int(np.ceil(q)) if vertical_positive else int(np.floor(q)))-x0
+        if 0 <= y < edge_labels.shape[0] and 0 <= x < edge_labels.shape[1]:
+            vtags.add(int(edge_labels[y, x]))
+    return bool((htags & vtags) - {0})
+
+
+def _elbows(observation, left_down):
+    p = _prepare(observation)
+    if p is None:
+        return []
+    d, light = p[:2]
+    hp, vp = not left_down, left_down
+    hs = _edge_parts(p, True, hp)
+    vs = _edge_parts(p, False, vp)
+    # Measure each arm independently; never borrow a thickness to reconstruct
+    # an outer contour hidden by the window.
+    hs = [(h, _arm(p, h, True, hp)) for h in hs]
+    vs = [(v, _arm(p, v, False, vp)) for v in vs]
+    best = {}
+    for h, ah in hs:
+        if ah is None:
+            continue
+        mh, bh, sh, component = h
+        for v, av in vs:
+            if av is None or component != v[3]:
+                continue
+            mv, bv, sv, _ = v
+            ix = (mv*bh+bv)/(1-mv*mh)
+            iy = mh*ix+bh
+            if left_down:
+                valid = (sh[0, 0] <= ix-7 and -3 <= ix-sh[-1, 0] <= 13
+                         and sv[-1, 0] >= iy+7 and -3 <= sv[0, 0]-iy <= 13)
+                rx, ry = ix-4, iy+4
+            else:
+                valid = (sh[-1, 0] >= ix+7 and -3 <= sh[0, 0]-ix <= 13
+                         and sv[0, 0] <= iy-7 and -3 <= iy-sv[-1, 0] <= 13)
+                rx, ry = ix+4, iy-4
+            if not valid:
+                continue
+            rx, ry = int(np.rint(rx)), int(np.rint(ry))
+            if not (1 <= rx < d.shape[1]-1 and 1 <= ry < d.shape[0]-1):
+                continue
+            if not light[ry-1:ry+2, rx-1:rx+2].all():
+                continue
+            if max(ah[2], av[2]) > 1.8*min(ah[2], av[2]):
+                continue
+            hm, hb = ah[:2]
+            vm, vb = av[:2]
+            ax = (vm*hb+vb)/(1-vm*hm)
+            ay = hm*ax+hb
+            points = list(ah[3])+list(av[3])+[(rx-1, ry-1), (rx+1, ry+1), (ax, ay)]
+            for t, q, _, _ in sh:
+                points.extend(((t, np.floor(q)), (t, np.ceil(q))))
+            for t, q, _, _ in sv:
+                points.extend(((np.floor(q), t), (np.ceil(q), t)))
+            # The rectangle includes the full inner transition and all fitted
+            # transverse profiles, including their light samples.
+            xy = np.asarray(points, float)
+            x0, y0 = np.floor(xy.min(axis=0)).astype(int)
+            x1, y1 = np.ceil(xy.max(axis=0)).astype(int)+1
+            box = (x0, y0, x1, y1)
+            item = _instance(p, _IDS[3 if left_down else 4], (ax, ay), box)
+            if item is None:
+                continue
+            if not _connected_inner_turn(d, light, sh, sv, hp, vp, box):
+                continue
+            local, _ = ndimage.label(d[y0:y1, x0:x1], structure=np.ones((3, 3), bool))
+            ht = float(np.mean(ah[4][:, 0]))
+            vt = float(np.mean(av[4][:, 0]))
+            endpoints = [(ht, hm*ht+hb), (vm*vt+vb, vt), (ax, ay)]
+            tags = []
+            for x, y in endpoints:
+                x, y = int(np.rint(x)), int(np.rint(y))
+                tags.append(int(local[y-y0, x-x0]) if x0 <= x < x1 and y0 <= y < y1 else 0)
+            if 0 in tags or len(set(tags)) != 1:
+                continue
+            score = len(sh)+len(sv)
+            if component not in best or score > best[component][0]:
+                best[component] = (score, item)
+    return [best[k][1] for k in sorted(best)]
+
+
+def detect_batch0_left_to_down_elbow(observation):
+    return _elbows(observation, True)
+
+
+def detect_batch0_up_to_right_elbow(observation):
+    return _elbows(observation, False)
+
+
+def detect_batch0_rounded_downward_tip(observation):
+    p = _prepare(observation)
+    if p is None:
+        return []
+    d, light, labels = p[:3]
+    candidates = []
+    # Candidate bottoms come from visible dark/light transitions, not the
+    # lowest pixel of an entire potentially cropped connected component.
+    for bottom in range(11, d.shape[0]-1):
+        for lo, end in _runs(d[bottom]):
+            if lo == 0 or end == d.shape[1]:
+                continue
+            if not light[bottom+1, lo:end].all():
+                continue
+            tx = (lo+end-1)/2
+            component = int(labels[bottom, lo])
+            rows = [(bottom, lo, end-1)]
+            for y in range(bottom-1, max(-1, bottom-39), -1):
+                oldlo, oldhi = rows[-1][1:]
+                runs = [(a, b-1) for a, b in _runs(d[y])
+                        if max(a, oldlo) <= min(b-1, oldhi)+1]
+                if len(runs) != 1:
+                    break
+                a, b = runs[0]
+                if a < 1 or b+1 >= d.shape[1]:
+                    break
+                if not (light[y, a-1] and light[y, b+1]):
+                    break
+                rows.append((y, a, b))
+            if len(rows) < 12:
+                continue
+            zall = np.asarray(rows[::-1], float)
+            selected = None
+            for n in range(len(zall), 11, -1):
+                z = zall[-n:]
+                w = z[:, 2]-z[:, 1]+1
+                shaft = z[:6]
+                sw = float(np.median(w[:6]))
+                if not 6 <= sw <= 44 or w[-1] > 0.75*sw:
+                    continue
+                cap_length = n-6
+                if not max(4, 0.18*sw) <= cap_length <= max(10, 0.9*sw):
+                    continue
+                if np.ptp(w[:6]) > max(3, 0.2*sw):
+                    continue
+                sm, sb, error = _line(shaft[:, 0], (shaft[:, 1]+shaft[:, 2])/2)
+                ml, _, el = _line(shaft[:, 0], shaft[:, 1])
+                mr, _, er = _line(shaft[:, 0], shaft[:, 2])
+                if abs(sm) > 0.65 or abs(ml-mr) > 0.35 or max(error, el, er) > 1.8:
+                    continue
+                shift = sm*(bottom-float(shaft[:, 0].mean()))
+                left0 = float(shaft[:, 1].mean())+shift
+                right0 = float(shaft[:, 2].mean())+shift
+                if z[-1, 1]-left0 < 2 or right0-z[-1, 2] < 2:
+                    continue
+                if np.count_nonzero(np.diff(w[5:]) > 2) > 1:
+                    continue
+                # Both sides must turn inward at multiple levels. This rejects
+                # a flat cut and a single oblique boundary.
+                left_in = z[6:, 1]-(shaft[:, 1].mean()+sm*(z[6:, 0]-shaft[:, 0].mean()))
+                right_in = (shaft[:, 2].mean()+sm*(z[6:, 0]-shaft[:, 0].mean()))-z[6:, 2]
+                if np.count_nonzero(left_in > 1) < 2 or np.count_nonzero(right_in > 1) < 2:
+                    continue
+                a, b = int(z[:, 1].min()), int(z[:, 2].max())
+                if not light[bottom+1, a-1:b+2].all():
+                    continue
+                if not (light[bottom, lo-1] and light[bottom, end]):
+                    continue
+                box = (a-1, int(z[0, 0]), b+2, bottom+2)
+                item = _instance(p, _IDS[5], (tx, bottom), box)
+                if item is not None:
+                    selected = (n, item)
+                    break
+            if selected is not None:
+                candidates.append((component, bottom, tx, selected[0], selected[1]))
+    result = []
+    retained = []
+    for component, bottom, tx, score, item in sorted(candidates, key=lambda q: (-q[3], q[1], q[2])):
+        if any(component == c and abs(bottom-y) < 8 and abs(tx-x) < 12 for c, y, x in retained):
+            continue
+        retained.append((component, bottom, tx))
+        result.append(item)
+    return sorted(result, key=lambda item: (item['anchor'][1], item['anchor'][0]))
+
+
+def perceive(observation):
+    detectors = (
+        detect_batch0_vertical_dark_band,
+        detect_batch0_horizontal_dark_band,
+        detect_batch0_dark_band_rising_right,
+        detect_batch0_left_to_down_elbow,
+        detect_batch0_up_to_right_elbow,
+        detect_batch0_rounded_downward_tip,
+    )
+    instances = []
+    for detector in detectors:
+        instances.extend(detector(observation))
+    return {'instances': instances}

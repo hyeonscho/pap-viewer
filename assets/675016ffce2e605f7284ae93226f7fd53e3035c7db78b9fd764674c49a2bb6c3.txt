@@ -1,0 +1,47 @@
+Each attachment is a uint8 grayscale 224x224 masked observation.
+Only a 64x64 window is visible at its canvas location. Exterior pixels are 128.
+No window origin or separate visibility mask is supplied. Real visible pixels
+may also equal 128. Coordinates use x rightward, y downward, integer anchors
+in [0,223], and half-open boxes within [0,224]. Never treat mask boundaries as
+physical contours, or cropped fragments as complete shapes or true endpoints.
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+This is a Test-only classification
+request. Exactly ONE image is attached: the CURRENT masked observation.
+No Train examples, Train summary, concept catalog, or generated detector are supplied.
+Interpret current pixels directly and retain useful observations in state_note.
+Repeated or overlapping glimpses are not separate objects.
+
+Allowed classes:
+{"0": "T-shirt/top", "1": "Trouser", "2": "Pullover", "3": "Dress", "4": "Coat", "5": "Sandal", "6": "Shirt", "7": "Sneaker", "8": "Bag", "9": "Ankle boot"}
+Budget:
+{"observations_used": 18, "observations_remaining": 18, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: Window approximately x133\u2013197, y117\u2013181 shows a pale vertical region at left fading into black by x165; right side is black. Object identity unclear.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: Window approximately x101\u2013165, y117\u2013181 contains a broad pale area with subtle vertical shading and a dark right edge near x157\u2013164. Identity remains unclear.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: Window approximately x101\u2013165, y85\u2013149 shows a broad light region with a dark near-vertical right edge around x156\u2013164, and a small lighter patch at its upper end. Garment or object type remains unclear.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o003", "model_output": {"state_note": "o003: Window approximately x101\u2013165, y53\u2013117 is mostly pale with faint vertical shading; a dark patch enters near x155\u2013164 at the bottom right. No diagnostic neckline or other identifying detail visible.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o004", "model_output": {"state_note": "o004: Window approximately x101\u2013165, y21\u201385 shows pale fabric with a dark sloping edge along the upper right. No clear neckline or diagnostic detail yet.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o005", "model_output": {"state_note": "o005: Window approximately x69\u2013133, y21\u201385 shows pale fabric with faint vertical folds and small dark patches near its upper edge; no clear neckline yet.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o006", "model_output": {"state_note": "o006: Window approximately x69\u2013133, y0\u201364 shows a pale region below a dark upper-left slope, with faint vertical shading. Top structure remains ambiguous; trouser waist or garment neckline is unconfirmed.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o007", "model_output": {"state_note": "o007: Window approximately x37\u2013101, y0\u201364 shows black above a curved/sloping pale boundary rising from about (40,45) toward (95,5). Pale area continues below and right; identity remains unclear.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o008", "model_output": {"state_note": "o008: Window approximately x37\u2013101, y32\u201396 shows pale material with a dark left boundary near x38\u201347 and faint vertical folds. Pale region continues rightward; no diagnostic garment detail yet.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o009", "model_output": {"state_note": "o009: Window approximately x37\u2013101, y64\u2013128 shows pale fabric above y94; below, black occupies the left to about x63 while pale fabric continues at x70\u2013100. This may be a sleeve ending beside a torso, but garment type is uncertain.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o010", "model_output": {"state_note": "o010: Window approximately x37\u2013101, y96\u2013160 shows black at x37\u201361 and pale fabric from about x70 rightward, separated by a nearly vertical edge. Together with o009, a short sleeve beside a longer torso is possible; lower extent remains unknown.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o011", "model_output": {"state_note": "o011: Window approximately x37\u2013101, y128\u2013192 shows black left of x62 and pale fabric from about x69 rightward, with a nearly vertical boundary. Lower hem remains unseen; short-sleeved top versus dress remains uncertain.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o012", "model_output": {"state_note": "o012: Window approximately x37\u2013101, y160\u2013224 shows a nearly vertical pale fabric edge near x65\u201370 and a bright horizontal hem around y211\u2013218, with dark pixels below. Earlier possible short sleeve and this long straight torso suggest a top; full hem shape remains unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o013", "model_output": {"state_note": "o013: Window approximately x69\u2013133, y160\u2013224 shows pale fabric ending in a bright, nearly horizontal hem around y210\u2013218, with black below. The hem continues across the visible width; no buttons or other details visible.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o014", "model_output": {"state_note": "o014: Window approximately x101\u2013165, y160\u2013224 shows pale fabric ending at a bright horizontal hem near y212\u2013218 and a dark right edge near x157\u2013163. Straight torso hem supports a top; neckline is still unobserved.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o015", "model_output": {"state_note": "o015: Window approximately x101\u2013165, y128\u2013192 shows pale fabric with faint vertical shading and a dark right boundary near x157\u2013164. No new diagnostic detail; neckline remains unresolved.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o016", "model_output": {"state_note": "o016: Window approximately x101\u2013165, y96\u2013160 shows pale fabric with faint vertical shading and a dark right boundary near x157\u2013164. No diagnostic detail is visible; upper center still needs inspection.", "action": "up", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o017", "step": 17, "previous_action": "up"}

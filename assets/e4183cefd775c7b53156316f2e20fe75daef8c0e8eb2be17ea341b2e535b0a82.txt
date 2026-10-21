@@ -1,0 +1,52 @@
+Control a partial-observation classification episode.
+At each observation, choose up, down, left, right, or answer and stop.
+The hidden image is a fixed 224x224 canvas. The 64x64 window moves 32 pixels
+per action, clamped at canvas boundaries. Every movement consumes another
+observation, even if clamping shows the same location. The initial view counts
+as observation one. The supplied budget gives observations used and remaining.
+Use as few observations as needed to make a well-supported class decision.
+If evidence is insufficient and budget remains, choose a useful movement.
+If no observations remain, you MUST answer; further movement is forbidden.
+Use all supplied evidence, including evidence inconsistent with an early guess.
+Unobserved content is unknown. A class prediction is a hypothesis, not a newly
+observed feature. Do not fabricate missing evidence to support your prediction.
+For a movement, return class_id null and evidence_ids []. For answer, choose one
+allowed class and cite supporting observation IDs acquired so far, or [] if none supports it.
+At the budget limit choose a class even if the evidence remains insufficient.
+Use H=1 textual memory: only the current observation is supplied. Text history
+contains all your previous validated outputs from this episode, unchanged and
+in order. Past images and detector outputs cannot be reopened. Previous notes
+are fallible records, not new observations or independent confirmations.
+Write state_note as a short factual observation record: visible local features,
+approximate locations, observation IDs, and uncertainty worth retaining.
+Distinguish class hypotheses from observed features. Do not invent unseen content.
+Do not give step-by-step deliberation. Prior notes remain available on later turns;
+you need not copy the whole history into the new note.
+Do not call tools or return a reasoning transcript or confidence score.
+Return only {"action": <up|down|left|right|answer>, "class_id": <integer|null>,
+"evidence_ids": [<acquired observation IDs>], "state_note": "<brief observation record>"}.
+You receive frozen visual concept definitions and
+the actual outputs of a frozen detector for the CURRENT observation only.
+No labeled Train examples or past detector archive are supplied.
+Interpret IDs using their visual definitions and geometry, and use your existing
+knowledge of the allowed classes. Detections can be wrong or incomplete.
+No detection means unknown, not verified absence. There is no complete visibility
+map. Repeated detections are not independent confirmations. Nearby records may
+describe the same structure. Cite observation IDs, not concept IDs, as evidence_ids.
+Do not infer physical instance counts, connections, or closure from record counts
+or proximity alone. Do not add inferred features to the evidence record.
+No image is attached. Your current perceptual
+input is the detector output only. Do not assume access to the underlying pixels.
+
+Allowed classes:
+{"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9"}
+Budget:
+{"observations_used": 18, "observations_remaining": 18, "max_observations": 36}
+Text history:
+[{"observation_id": "o000", "model_output": {"state_note": "o000: no detected features; current region is uninformative.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o001", "model_output": {"state_note": "o001: no detected features after moving up; digit structure remains unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o002", "model_output": {"state_note": "o002: no detected features after moving right; digit structure remains unknown.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o003", "model_output": {"state_note": "o003: no detected features after moving down; digit structure remains unknown.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o004", "model_output": {"state_note": "o004: no detected features after the second downward move; digit structure remains unknown.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o005", "model_output": {"state_note": "o005: no detected features after moving left; digit structure remains unknown.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o006", "model_output": {"state_note": "o006: no detected features after moving left; digit structure remains unknown.", "action": "down", "class_id": null, "evidence_ids": []}}, {"observation_id": "o007", "model_output": {"state_note": "o007: no detected features after moving down; digit structure remains unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o008", "model_output": {"state_note": "o008: no detected features after moving right; digit structure remains unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o009", "model_output": {"state_note": "o009: no detected features after moving right; digit structure remains unknown.", "action": "right", "class_id": null, "evidence_ids": []}}, {"observation_id": "o010", "model_output": {"state_note": "o010: no detected features after moving right; digit identity remains unsupported. Moving up to inspect a new region.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o011", "model_output": {"state_note": "o011: no detected features; digit identity remains unsupported. Moving up to inspect a different region.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o012", "model_output": {"state_note": "o012: no detected features; digit identity remains unsupported. Inspecting the region above.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o013", "model_output": {"state_note": "o013: no detected features; digit identity remains unsupported. The region above has not yet been sampled along this path.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o014", "model_output": {"state_note": "o014: rising-right dark band near (180,69), box [171,52,191,94]; no endpoint or bend established. Digit identity remains uncertain.", "action": "left", "class_id": null, "evidence_ids": []}}, {"observation_id": "o015", "model_output": {"state_note": "o015: rising-right band near (180,69), box [171,52,191,94], matching o014's local structure; no endpoint or bend established.", "action": "up", "class_id": null, "evidence_ids": []}}, {"observation_id": "o016", "model_output": {"state_note": "o016: no detected features after moving up from o015; the previously detected diagonal near (180,69) remains the only recorded structure.", "action": "down", "class_id": null, "evidence_ids": []}}]
+Current observation:
+{"observation_id": "o017", "step": 17, "previous_action": "down"}
+Frozen definitions:
+[{"id": "batch0_vertical_dark_band", "definition": "A locally upright dark band, allowing slight lean, with approximately parallel lateral contours.", "anchor_rule": "Round the midpoint of the supported upright centerline segment to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the supported segment and visible light margins on both sides.", "support_rule": "Require both lateral contours over enough length to establish upright orientation. Exclude crop edges and rounded caps from contour fitting."}, {"id": "batch0_horizontal_dark_band", "definition": "A locally horizontal dark band with approximately parallel upper and lower contours.", "anchor_rule": "Round the midpoint of the supported horizontal centerline segment to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the segment and visible light margins above and below.", "support_rule": "Require visible upper and lower contours supporting horizontal orientation. Longitudinal cropping supplies no endpoint evidence."}, {"id": "batch0_dark_band_rising_right", "definition": "A dark band whose supported centerline rises toward the right, allowing uneven contours and varying steepness.", "anchor_rule": "Round the midpoint of the supported upward-right centerline segment to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the diagonal segment and visible light margins along both sides.", "support_rule": "Require two visible lateral contours and consistent net upward-right progression. Do not infer endpoints at crop edges."}, {"id": "batch0_left_to_down_elbow", "definition": "A dark band connecting a leftward arm to a downward arm around a visible light recess below-left. Complete outer-corner rounding is not established.", "anchor_rule": "Round the intersection of fitted local arm centerlines to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the supported inner turn, short portions of both arms, and adjacent visible light.", "support_rule": "Require connected dark arms and a visible inner contour turning around the below-left recess. Cropped outer contours remain unspecified."}, {"id": "batch0_up_to_right_elbow", "definition": "A dark band connecting an upper arm to a rightward arm around a visible upper-right light recess.", "anchor_rule": "Round the intersection of fitted local arm centerlines to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the bend, supported arm portions, and visible inner and outer light margins.", "support_rule": "Require a continuous transition between both arms and a visible upper-right inner recess. Do not infer continuation outside the window."}, {"id": "batch0_rounded_downward_tip", "definition": "A dark shaft terminating downward in a rounded cap with visible light beyond its lower extremity.", "anchor_rule": "Round the midpoint of the terminal cap across the local shaft direction to an integer canvas pixel.", "box_rule": "Use a half-open box enclosing the cap, a short supported shaft portion, and the visible surrounding light.", "support_rule": "Require a continuous closing contour joining both shaft sides and visible light below the cap. A crop boundary cannot establish termination."}]
+Current detector output:
+{"instances": [{"concept_id": "batch0_dark_band_rising_right", "anchor": [180, 69], "box": [171, 52, 191, 94]}]}
