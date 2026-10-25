@@ -1,0 +1,42 @@
+'use strict';
+const S = {dataset:'mnist', variant:'all', tab:'concepts', query:''};
+let D;
+const $ = s => document.querySelector(s);
+const esc = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const same = x => x.dataset===S.dataset && x.variant===S.variant;
+const label = x => (x.dataset==='mnist'?'MNIST':'Fashion-MNIST')+' · '+(x.variant==='all'?'한 번':'순차');
+const concept = key => D.concepts.find(c=>c.key===key);
+const conceptKey = (call,id) => D.concepts.find(c=>c.call_key.split('/').slice(0,2).join('/')===call.split('/').slice(0,2).join('/')&&c.proposal.id===id).key;
+const thumb = key => {const o=D.observations[key];return `<button class="thumb-button" data-patch="${esc(key)}"><img src="${esc(o.image)}" alt="실제 입력 ${esc(o.batch)} #${o.patch}" loading="lazy"><span>${esc(o.batch)} #${o.patch}</span></button>`;};
+const parts = (items,call) => `<div class="parts">${items.map(p=>{const key=p.concept_key||conceptKey(call,p.concept_id);return `<button class="part" data-concept="${esc(key)}">${esc(p.role)}: ${esc(concept(key).proposal.name)}</button>`;}).join('')}</div>`;
+const matches = value => !S.query || JSON.stringify(value).toLowerCase().includes(S.query.toLowerCase());
+function render(){
+ document.querySelectorAll('[data-dataset]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.dataset===S.dataset));
+ document.querySelectorAll('[data-variant]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.variant===S.variant));
+ document.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.tab===S.tab));
+ const row=D.comparison.find(same);
+ $('#scope-stats').innerHTML=`<span>정의 <strong>${row.v2_concepts}</strong></span><span>표현 <strong>${row.v2_expressions}</strong></span><span>여러 part의 표현 <strong>${row.v2_expressions_with_multiple_parts}</strong></span><span>근거 patch 합집합 <strong>${row.v2_definition_or_expression_observations} / 1,050</strong></span>`;
+ const notes={concepts:'발견한 정의입니다. 근거 이미지를 누르면 같은 patch에 연결된 표현도 볼 수 있습니다.',expressions:'관찰을 기술한 사용 예입니다. 역할 옆 concept을 누르면 해당 정의로 이동합니다. 표현에는 별도 concept ID가 없습니다.',patches:'정의 근거나 표현 근거가 하나 이상 있는 patch입니다. 두 종류의 연결을 구분하며, composition 구성 요소에 근거를 자동 전파하지 않습니다.',calls:'각 호출이 새로 추가한 정의와 표현 수입니다. 이전 정의는 같은 dataset·입력 방식 안에서만 전달했습니다.'};
+ $('#tab-note').textContent=notes[S.tab];
+ let html;
+ if(S.tab==='concepts') html=`<div class="cards">${D.concepts.filter(same).filter(matches).map(c=>`<article class="card concept-card"><span class="id">${esc(c.proposal.id)}</span><h3>${esc(c.proposal.name)}</h3><p class="definition">${esc(c.proposal.definition)}</p><p class="small">정의 근거 ${c.evidence.length}개 · ${c.proposal.composition.parts.length?'named composite':'구성 concept 참조 없음'}</p><div class="thumbs">${c.evidence.slice(0,2).map(e=>thumb(e.observation_key)).join('')}</div><button data-concept="${esc(c.key)}">정의·전체 근거 보기</button></article>`).join('')}</div>`;
+ if(S.tab==='expressions') html=`<div class="expression-list">${D.expressions.map((e,index)=>({...e,index})).filter(same).filter(matches).map(e=>`<article class="card expression-card">${thumb(e.observation_key)}<div><span class="id">${esc(e.expression.batch)} #${e.expression.patch} · part ${e.parts.length}개</span><p>${esc(e.expression.observation)}</p>${parts(e.parts,e.call_key)}<p><strong>관계:</strong> ${esc(e.expression.combination)}</p><button data-expression="${e.index}">표현 원문과 근거</button></div></article>`).join('')}</div>`;
+ if(S.tab==='patches') html=`<div class="cards">${Object.values(D.observations).filter(same).filter(o=>matches(o)||matches(defsFor(o.key))||matches(exprsFor(o.key))).map(o=>`<article class="card patch-card"><h3>${esc(o.batch)} #${o.patch}</h3><div class="thumbs">${thumb(o.key)}</div><p class="small">정의 근거 ${defsFor(o.key).length}개 · 표현 ${exprsFor(o.key).length}개</p></article>`).join('')}</div>`;
+ if(S.tab==='calls') html='<div class="table-scroll"><table class="call-table"><thead><tr><th>Batch</th><th>입력</th><th>이전 정의</th><th>새 정의</th><th>표현</th><th>Input / output tokens</th></tr></thead><tbody>'+D.calls.filter(same).filter(matches).map(c=>`<tr><td>${esc(c.batch)}</td><td>${c.count}</td><td>${c.prior_concepts}</td><td>${c.new_concepts}</td><td>${c.expressions}</td><td>${c.usage.input_tokens.toLocaleString()} / ${c.usage.output_tokens.toLocaleString()}</td></tr>`).join('')+'</tbody></table></div>';
+ $('#items').innerHTML=html;
+ if(!$('#items').querySelector('article,tbody tr')) $('#items').innerHTML='<p class="empty">이 조건에서 검색어에 맞는 기록이 없습니다.</p>';
+}
+const defsFor = key => D.concepts.filter(c=>c.evidence.some(e=>e.observation_key===key));
+const exprsFor = key => D.expressions.map((e,index)=>({...e,index})).filter(e=>e.observation_key===key);
+function show(html){$('#detail-content').innerHTML=html;if(!$('#detail').open)$('#detail').showModal();$('#detail').scrollTop=0;}
+function showConcept(key){const c=concept(key);show(`<span class="id">${esc(label(c))} / ${esc(c.proposal.id)}</span><h2>${esc(c.proposal.name)}</h2><p>${esc(c.proposal.definition)}</p>${parts(c.proposal.composition.parts,c.call_key)}<p>${esc(c.proposal.composition.combination)}</p><h3>발견 근거 ${c.evidence.length}개</h3><div class="evidence-grid">${c.evidence.map(e=>`<article class="evidence-card">${thumb(e.observation_key)}<p>${esc(e.observation)}</p></article>`).join('')}</div><p class="caption">이 근거를 조합의 구성 concept에 자동으로 부여하지 않습니다.</p>`);}
+function showExpression(index){const e=D.expressions[index];show(`<span class="id">${esc(label(e))} / ${esc(e.expression.batch)} #${e.expression.patch}</span><h2>관찰의 표현</h2>${thumb(e.observation_key)}<p>${esc(e.expression.observation)}</p>${parts(e.parts,e.call_key)}<p><strong>관계:</strong> ${esc(e.expression.combination)}</p><details><summary>모델이 반환한 JSON</summary><pre>${esc(JSON.stringify(e.expression,null,2))}</pre></details>`);}
+function showPatch(key){const o=D.observations[key],defs=defsFor(key),exprs=exprsFor(key);show(`<span class="id">${esc(label(o))} / ${esc(o.batch)} #${o.patch}</span><h2>한 patch에 연결된 기록</h2><img class="patch-large" src="${esc(o.image)}" alt="실제 입력 ${esc(o.batch)} #${o.patch}"><h3>정의의 발견 근거 · ${defs.length}개</h3>${defs.length?defs.map(c=>`<p><button class="link-button" data-concept="${esc(c.key)}">${esc(c.proposal.name)}</button></p>`).join(''):'<p class="small">이 patch를 발견 근거로 인용한 정의는 없습니다.</p>'}<h3>관찰 표현 · ${exprs.length}개</h3>${exprs.length?exprs.map(e=>`<article class="card"><p>${esc(e.expression.observation)}</p>${parts(e.parts,e.call_key)}<p>${esc(e.expression.combination)}</p><button data-expression="${e.index}">표현 원문</button></article>`).join(''):'<p class="small">이 patch에 기록된 표현은 없습니다.</p>'}<p class="caption">인용하지 않은 concept이 존재하지 않는다는 뜻은 아닙니다.</p>`);}
+document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b||!D)return;if(b.dataset.dataset){S.dataset=b.dataset.dataset;render();}else if(b.dataset.variant){S.variant=b.dataset.variant;render();}else if(b.dataset.tab){S.tab=b.dataset.tab;render();}else if(b.dataset.concept)showConcept(b.dataset.concept);else if(b.dataset.patch)showPatch(b.dataset.patch);else if(b.dataset.expression!==undefined)showExpression(Number(b.dataset.expression));});
+$('#close-detail').addEventListener('click',()=>$('#detail').close());
+$('#detail').addEventListener('click',e=>{if(e.target===$('#detail'))$('#detail').close();});
+$('#search').addEventListener('input',e=>{S.query=e.target.value;render();});
+fetch('data.json').then(response=>{if(!response.ok)throw new Error('Data could not be loaded');return response.json();}).then(data=>{D=data;window.PAP_V2={data:D,state:S};$('#prompt-ko').textContent=D.prompt_ko;$('#prompt-en').textContent=D.prompt;
+ $('#comparison tbody').innerHTML=D.comparison.map(r=>`<tr><td>${esc(label(r))}</td><td>${r.v1_concepts}</td><td><strong>${r.v2_concepts}</strong></td><td>${r.v2_expressions}</td><td>${r.v2_expressions_with_multiple_parts}</td></tr>`).join('');
+ $('#evidence tbody').innerHTML=D.comparison.map(r=>`<tr><td>${esc(label(r))}</td><td>${r.v1_definition_evidence_observations}</td><td>${r.v2_definition_evidence_observations}</td><td>${r.v2_expression_observations}</td><td>${r.v2_definition_or_expression_observations}</td></tr>`).join('');render();
+}).catch(error=>{$('#items').textContent='실험 데이터를 불러오지 못했습니다. 페이지를 새로고침해 주세요.';throw error;});
