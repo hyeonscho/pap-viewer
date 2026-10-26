@@ -1,0 +1,34 @@
+[
+  {
+    "dataset": "mnist",
+    "variant": "all",
+    "v3_definitions": 23,
+    "v4_definitions": 16,
+    "v3_expressions": 23,
+    "v4_expressions": 18
+  },
+  {
+    "dataset": "mnist",
+    "variant": "sequential",
+    "v3_definitions": 13,
+    "v4_definitions": 16,
+    "v3_expressions": 73,
+    "v4_expressions": 82
+  },
+  {
+    "dataset": "fashion_mnist",
+    "variant": "all",
+    "v3_definitions": 19,
+    "v4_definitions": 19,
+    "v3_expressions": 18,
+    "v4_expressions": 35
+  },
+  {
+    "dataset": "fashion_mnist",
+    "variant": "sequential",
+    "v3_definitions": 16,
+    "v4_definitions": 15,
+    "v3_expressions": 70,
+    "v4_expressions": 75
+  }
+]

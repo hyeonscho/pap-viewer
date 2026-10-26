@@ -1,5 +1,5 @@
-.version-tabs{display:flex;gap:12px;padding:20px max(16px,calc((100% - 1120px)/2));background:#edf2ee;border-bottom:1px solid #cad8cf;font-family:system-ui,sans-serif;box-sizing:border-box}
-.version-tabs a{flex:1;display:flex;align-items:center;gap:16px;padding:14px 20px;border:2px solid transparent;border-radius:12px;background:#fff;color:#253d34;text-decoration:none;min-width:0}
+.version-tabs{display:flex;flex-wrap:wrap;gap:12px;padding:20px max(16px,calc((100% - 1120px)/2));background:#edf2ee;border-bottom:1px solid #cad8cf;font-family:system-ui,sans-serif;box-sizing:border-box}
+.version-tabs a{flex:1 1 150px;display:flex;align-items:center;gap:16px;padding:14px 20px;border:2px solid transparent;border-radius:12px;background:#fff;color:#253d34;text-decoration:none;min-width:0}
 .version-tabs a[aria-current=page]{background:#145e52;border-color:#145e52;color:#fff;box-shadow:0 4px 14px #145e5220}
 .version-tabs a:focus-visible{outline:3px solid #347fb3;outline-offset:3px}
 .version-tabs strong{font-size:30px;color:inherit;line-height:1.2}.version-tabs span{font-size:13px;line-height:1.5}
@@ -17,3 +17,4 @@
 @media(max-width:650px){.version-tabs{gap:8px;padding:12px 15px}.version-tabs a{padding:12px;display:block}.version-tabs strong{display:block;font-size:26px}.version-tabs span{display:block;font-size:11px;margin-top:5px}.version-links{gap:8px 16px}.ko-core,.concept-card .ko-core{font-size:23px}.concept-card .thumbs figure,.concept-card .thumbs img{width:84px}.concept-card .thumbs img{height:84px}.concept-card .thumb-button img{width:112px;height:112px}.concept-card .card-meta{width:100%}#detail-content h2.ko-core{font-size:25px}.concept-report>main>header h1{font-size:30px}}
 
 .dialog-head h2{font-size:25px;line-height:1.45}.masthead{height:48px}.hero{padding:22px 0 20px}.hero h1{font-size:34px}.hero .lede{margin-top:8px}.toolbar{margin:16px 0 10px}.concept-report .lead{font-size:16px}.concept-report .badges{margin-top:12px}.concept-report #explorer>p:first-of-type{font-size:14px;margin:8px 0}.concept-report #explorer h2{font-size:26px;margin-bottom:10px}.concept-report .controls{margin:16px 0}.concept-report .search-label{margin-top:12px}
+.version-tabs a[href$="concept-v4-sol/"] strong{font-size:25px;white-space:nowrap}.version-tabs a[href$="concept-v4-sol/"] span{word-break:keep-all}
