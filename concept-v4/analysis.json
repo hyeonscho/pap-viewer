@@ -1,0 +1,513 @@
+{
+  "conditions": [
+    {
+      "dataset": "mnist",
+      "variant": "all",
+      "v3": {
+        "dataset": "mnist",
+        "variant": "all",
+        "definitions": 10,
+        "expressions": 10,
+        "definition_links": 36,
+        "definition_observations": 31,
+        "expression_observations": 10,
+        "cited_observations": 31,
+        "uncited_observations": 1019,
+        "multiple_parts": 9,
+        "new_definitions_by_call": [
+          10
+        ],
+        "first_tenth_citations": 22,
+        "citation_denominator": 31,
+        "first_tenth_fraction": 0.7096774193548387
+      },
+      "v4": {
+        "dataset": "mnist",
+        "variant": "all",
+        "definitions": 8,
+        "expressions": 10,
+        "definition_links": 30,
+        "definition_observations": 30,
+        "expression_observations": 10,
+        "cited_observations": 30,
+        "uncited_observations": 1020,
+        "multiple_parts": 1,
+        "new_definitions_by_call": [
+          8
+        ],
+        "first_tenth_citations": 25,
+        "citation_denominator": 30,
+        "first_tenth_fraction": 0.8333333333333334
+      },
+      "shared_cited_observations": 8,
+      "v3_only": 23,
+      "v4_only": 22
+    },
+    {
+      "dataset": "mnist",
+      "variant": "sequential",
+      "v3": {
+        "dataset": "mnist",
+        "variant": "sequential",
+        "definitions": 12,
+        "expressions": 32,
+        "definition_links": 66,
+        "definition_observations": 66,
+        "expression_observations": 32,
+        "cited_observations": 82,
+        "uncited_observations": 968,
+        "multiple_parts": 20,
+        "new_definitions_by_call": [
+          7,
+          1,
+          2,
+          1,
+          1
+        ],
+        "first_tenth_citations": 8,
+        "citation_denominator": 82,
+        "first_tenth_fraction": 0.0975609756097561
+      },
+      "v4": {
+        "dataset": "mnist",
+        "variant": "sequential",
+        "definitions": 14,
+        "expressions": 44,
+        "definition_links": 61,
+        "definition_observations": 59,
+        "expression_observations": 44,
+        "cited_observations": 76,
+        "uncited_observations": 974,
+        "multiple_parts": 34,
+        "new_definitions_by_call": [
+          9,
+          2,
+          2,
+          1,
+          0
+        ],
+        "first_tenth_citations": 13,
+        "citation_denominator": 76,
+        "first_tenth_fraction": 0.17105263157894737
+      },
+      "shared_cited_observations": 9,
+      "v3_only": 73,
+      "v4_only": 67
+    },
+    {
+      "dataset": "fashion_mnist",
+      "variant": "all",
+      "v3": {
+        "dataset": "fashion_mnist",
+        "variant": "all",
+        "definitions": 12,
+        "expressions": 14,
+        "definition_links": 74,
+        "definition_observations": 72,
+        "expression_observations": 14,
+        "cited_observations": 73,
+        "uncited_observations": 977,
+        "multiple_parts": 11,
+        "new_definitions_by_call": [
+          12
+        ],
+        "first_tenth_citations": 34,
+        "citation_denominator": 73,
+        "first_tenth_fraction": 0.4657534246575342
+      },
+      "v4": {
+        "dataset": "fashion_mnist",
+        "variant": "all",
+        "definitions": 10,
+        "expressions": 7,
+        "definition_links": 80,
+        "definition_observations": 55,
+        "expression_observations": 7,
+        "cited_observations": 55,
+        "uncited_observations": 995,
+        "multiple_parts": 7,
+        "new_definitions_by_call": [
+          10
+        ],
+        "first_tenth_citations": 53,
+        "citation_denominator": 55,
+        "first_tenth_fraction": 0.9636363636363636
+      },
+      "shared_cited_observations": 21,
+      "v3_only": 52,
+      "v4_only": 34
+    },
+    {
+      "dataset": "fashion_mnist",
+      "variant": "sequential",
+      "v3": {
+        "dataset": "fashion_mnist",
+        "variant": "sequential",
+        "definitions": 19,
+        "expressions": 40,
+        "definition_links": 106,
+        "definition_observations": 92,
+        "expression_observations": 40,
+        "cited_observations": 112,
+        "uncited_observations": 938,
+        "multiple_parts": 34,
+        "new_definitions_by_call": [
+          11,
+          2,
+          3,
+          3,
+          0
+        ],
+        "first_tenth_citations": 23,
+        "citation_denominator": 112,
+        "first_tenth_fraction": 0.20535714285714285
+      },
+      "v4": {
+        "dataset": "fashion_mnist",
+        "variant": "sequential",
+        "definitions": 8,
+        "expressions": 91,
+        "definition_links": 55,
+        "definition_observations": 55,
+        "expression_observations": 91,
+        "cited_observations": 139,
+        "uncited_observations": 911,
+        "multiple_parts": 9,
+        "new_definitions_by_call": [
+          8,
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_tenth_citations": 30,
+        "citation_denominator": 139,
+        "first_tenth_fraction": 0.2158273381294964
+      },
+      "shared_cited_observations": 36,
+      "v3_only": 76,
+      "v4_only": 103
+    }
+  ],
+  "audit_counts": [
+    {
+      "version": "v3",
+      "kind": "definition",
+      "records": 53,
+      "verdicts": {
+        "supported": 27,
+        "contradicted": 13,
+        "indeterminate": 13
+      },
+      "mask_artifact_records": 7
+    },
+    {
+      "version": "v3",
+      "kind": "expression",
+      "records": 96,
+      "verdicts": {
+        "indeterminate": 23,
+        "contradicted": 18,
+        "supported": 55
+      },
+      "mask_artifact_records": 29
+    },
+    {
+      "version": "v4",
+      "kind": "definition",
+      "records": 40,
+      "verdicts": {
+        "contradicted": 16,
+        "supported": 17,
+        "indeterminate": 7
+      },
+      "mask_artifact_records": 5
+    },
+    {
+      "version": "v4",
+      "kind": "expression",
+      "records": 152,
+      "verdicts": {
+        "indeterminate": 38,
+        "supported": 87,
+        "contradicted": 27
+      },
+      "mask_artifact_records": 24
+    }
+  ],
+  "v4_audited_records": 192,
+  "v4_distinct_audited_observations": 155,
+  "v4_distinct_audited_originals": 129,
+  "v4_audit_verdicts": {
+    "contradicted": 43,
+    "supported": 104,
+    "indeterminate": 45
+  },
+  "v4_mask_artifact_records": 29,
+  "v4_window_relation_records": 8,
+  "v4_audit_by_condition": [
+    {
+      "dataset": "mnist",
+      "variant": "all",
+      "verdicts": {
+        "contradicted": 5,
+        "supported": 8,
+        "indeterminate": 5
+      }
+    },
+    {
+      "dataset": "mnist",
+      "variant": "sequential",
+      "verdicts": {
+        "supported": 31,
+        "contradicted": 19,
+        "indeterminate": 8
+      }
+    },
+    {
+      "dataset": "fashion_mnist",
+      "variant": "all",
+      "verdicts": {
+        "supported": 8,
+        "contradicted": 7,
+        "indeterminate": 2
+      }
+    },
+    {
+      "dataset": "fashion_mnist",
+      "variant": "sequential",
+      "verdicts": {
+        "contradicted": 12,
+        "supported": 57,
+        "indeterminate": 30
+      }
+    }
+  ],
+  "limitations": [
+    "Selected discovery evidence is not exhaustive labeling or accuracy.",
+    "Audits use each definition's first evidence and every expression.",
+    "Records and observations are correlated; samples differ between versions.",
+    "One run per prompt does not identify a causal improvement."
+  ],
+  "composition": {
+    "mnist_sequential_multipart": 34,
+    "mnist_sequential_window_contact_expressions": 7,
+    "mnist_sequential_multipart_without_window_contact": 30,
+    "mnist_sequential_multipart_without_window_contact_or_dark_field": 29,
+    "fashion_b5_expressions": 53,
+    "fashion_b5_multipart": 0,
+    "interpretation": "Structural reference counts, not verified semantic factor independence or accuracy."
+  },
+  "observation_summary": [
+    {
+      "dataset": "mnist",
+      "variant": "all",
+      "observations": 1050,
+      "definition_cited": 30,
+      "expression_cited": 10,
+      "intersection": 10,
+      "union": 30,
+      "uncited": 1020,
+      "originals_with_any_citation": 29,
+      "originals_with_no_citation": 181,
+      "all_black_total": 7,
+      "all_black_cited": 2,
+      "all_black_uncited": 5,
+      "nonuniform_uncited": 1015
+    },
+    {
+      "dataset": "mnist",
+      "variant": "sequential",
+      "observations": 1050,
+      "definition_cited": 59,
+      "expression_cited": 44,
+      "intersection": 27,
+      "union": 76,
+      "uncited": 974,
+      "originals_with_any_citation": 69,
+      "originals_with_no_citation": 141,
+      "all_black_total": 7,
+      "all_black_cited": 4,
+      "all_black_uncited": 3,
+      "nonuniform_uncited": 971
+    },
+    {
+      "dataset": "fashion_mnist",
+      "variant": "all",
+      "observations": 1050,
+      "definition_cited": 55,
+      "expression_cited": 7,
+      "intersection": 7,
+      "union": 55,
+      "uncited": 995,
+      "originals_with_any_citation": 52,
+      "originals_with_no_citation": 158,
+      "all_black_total": 14,
+      "all_black_cited": 2,
+      "all_black_uncited": 12,
+      "nonuniform_uncited": 983
+    },
+    {
+      "dataset": "fashion_mnist",
+      "variant": "sequential",
+      "observations": 1050,
+      "definition_cited": 55,
+      "expression_cited": 91,
+      "intersection": 7,
+      "union": 139,
+      "uncited": 911,
+      "originals_with_any_citation": 101,
+      "originals_with_no_citation": 109,
+      "all_black_total": 14,
+      "all_black_cited": 3,
+      "all_black_uncited": 11,
+      "nonuniform_uncited": 900
+    }
+  ],
+  "citation_positions": [
+    {
+      "call_key": "mnist/all/A",
+      "count": 1050,
+      "cited": 30,
+      "min": 1,
+      "max": 588,
+      "median": 42.5,
+      "first10": 3,
+      "first20": 9,
+      "first50": 19,
+      "first10pct": 25
+    },
+    {
+      "call_key": "mnist/sequential/B1",
+      "count": 210,
+      "cited": 33,
+      "min": 1,
+      "max": 202,
+      "median": 63.0,
+      "first10": 3,
+      "first20": 5,
+      "first50": 15,
+      "first10pct": 5
+    },
+    {
+      "call_key": "mnist/sequential/B2",
+      "count": 210,
+      "cited": 18,
+      "min": 3,
+      "max": 143,
+      "median": 59.0,
+      "first10": 3,
+      "first20": 3,
+      "first50": 8,
+      "first10pct": 3
+    },
+    {
+      "call_key": "mnist/sequential/B3",
+      "count": 210,
+      "cited": 8,
+      "min": 5,
+      "max": 187,
+      "median": 153.0,
+      "first10": 1,
+      "first20": 2,
+      "first50": 3,
+      "first10pct": 2
+    },
+    {
+      "call_key": "mnist/sequential/B4",
+      "count": 210,
+      "cited": 8,
+      "min": 30,
+      "max": 194,
+      "median": 113.5,
+      "first10": 0,
+      "first20": 0,
+      "first50": 1,
+      "first10pct": 0
+    },
+    {
+      "call_key": "mnist/sequential/B5",
+      "count": 210,
+      "cited": 9,
+      "min": 17,
+      "max": 210,
+      "median": 24.0,
+      "first10": 0,
+      "first20": 3,
+      "first50": 5,
+      "first10pct": 3
+    },
+    {
+      "call_key": "fashion_mnist/all/A",
+      "count": 1050,
+      "cited": 55,
+      "min": 1,
+      "max": 116,
+      "median": 46.0,
+      "first10": 7,
+      "first20": 15,
+      "first50": 28,
+      "first10pct": 53
+    },
+    {
+      "call_key": "fashion_mnist/sequential/B1",
+      "count": 210,
+      "cited": 55,
+      "min": 1,
+      "max": 210,
+      "median": 101.0,
+      "first10": 6,
+      "first20": 8,
+      "first50": 15,
+      "first10pct": 8
+    },
+    {
+      "call_key": "fashion_mnist/sequential/B2",
+      "count": 210,
+      "cited": 8,
+      "min": 2,
+      "max": 176,
+      "median": 30.5,
+      "first10": 3,
+      "first20": 3,
+      "first50": 7,
+      "first10pct": 3
+    },
+    {
+      "call_key": "fashion_mnist/sequential/B3",
+      "count": 210,
+      "cited": 8,
+      "min": 4,
+      "max": 50,
+      "median": 24.0,
+      "first10": 2,
+      "first20": 3,
+      "first50": 8,
+      "first10pct": 3
+    },
+    {
+      "call_key": "fashion_mnist/sequential/B4",
+      "count": 210,
+      "cited": 15,
+      "min": 1,
+      "max": 200,
+      "median": 74.0,
+      "first10": 2,
+      "first20": 3,
+      "first50": 7,
+      "first10pct": 4
+    },
+    {
+      "call_key": "fashion_mnist/sequential/B5",
+      "count": 210,
+      "cited": 53,
+      "min": 1,
+      "max": 210,
+      "median": 87.0,
+      "first10": 8,
+      "first20": 11,
+      "first50": 21,
+      "first10pct": 12
+    }
+  ]
+}
